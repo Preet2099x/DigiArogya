@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.0;
 
 contract EHRmain {
     // User roles
-    enum Role { NONE, PATIENT, PROVIDER, RESEARCHER}
+    enum Role { NONE, PATIENT, PROVIDER, RESEARCHER }
     
     // Data types
     enum DataType { EHR, PHR, LAB_RESULT, PRESCRIPTION, IMAGING }
@@ -18,10 +18,8 @@ contract EHRmain {
     struct User {
         address userAddress;
         Role role;
-        bool isActive;
         uint256 registrationDate;
         bytes32 publicKeyHash;
-        bool isVerified;
     }
 
     // Struct for health records metadata
@@ -67,17 +65,11 @@ contract EHRmain {
     event PermissionGranted(bytes32 indexed requestId, address indexed requester, address indexed owner);
     event PermissionRevoked(bytes32 indexed dataHash, address indexed revokedUser);
     event RecordUpdated(bytes32 indexed dataHash, address indexed updater);
-    event UserVerified(address indexed userAddress);
     event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
 
     // Modifiers
     modifier onlySystemOwner() {
         require(msg.sender == systemOwner, "Only system owner can call this function");
-        _;
-    }
-
-    modifier onlyVerifiedUser() {
-        require(users[msg.sender].isVerified, "User is not verified");
         _;
     }
 
@@ -88,12 +80,12 @@ contract EHRmain {
 
     modifier onlyPatient() {
         require(users[msg.sender].role == Role.PATIENT, "Only patients can call this function");
-        _;
+        _; 
     }
 
     modifier recordExists(bytes32 _dataHash) {
         require(healthRecords[_dataHash].isValid, "Record does not exist");
-        _;
+        _; 
     }
 
     // Constructor
@@ -115,10 +107,8 @@ contract EHRmain {
         users[msg.sender] = User({
             userAddress: msg.sender,
             role: _role,
-            isActive: true,
             registrationDate: block.timestamp,
-            publicKeyHash: _publicKeyHash,
-            isVerified: false
+            publicKeyHash: _publicKeyHash
         });
 
         totalUsers++;
@@ -126,24 +116,8 @@ contract EHRmain {
         return true;
     }
 
-    function verifyUser(address _userAddress) external onlySystemOwner {
-        require(users[_userAddress].userAddress != address(0), "User does not exist");
-        require(!users[_userAddress].isVerified, "User already verified");
-
-        users[_userAddress].isVerified = true;
-        emit UserVerified(_userAddress);
-    }
-
-    function deactivateUser(address _userAddress) external onlySystemOwner {
-        require(users[_userAddress].userAddress != address(0), "User does not exist");
-        require(users[_userAddress].isActive, "User already deactivated");
-
-        users[_userAddress].isActive = false;
-    }
-
-    function checkUser(address _userAddress) public view returns (bool, Role) {
-        User memory user = users[_userAddress];
-        return (user.isActive && user.isVerified, user.role);
+    function checkUser(address _userAddress) public view returns (Role) {
+        return users[_userAddress].role;
     }
 
     // Data Contract Functions
@@ -152,12 +126,12 @@ contract EHRmain {
         bytes32 _dataHash,
         DataType _dataType,
         bytes memory _encryptedSymmetricKey
-    ) external onlyProvider onlyVerifiedUser returns (bool) {
+    ) external onlyProvider returns (bool) {
         require(_patientAddress != address(0), "Invalid patient address");
         require(healthRecords[_dataHash].dataHash == bytes32(0), "Record already exists");
-        
-        (bool isValid, Role role) = checkUser(_patientAddress);
-        require(isValid && role == Role.PATIENT, "Invalid patient");
+
+        Role patientRole = checkUser(_patientAddress);
+        require(patientRole == Role.PATIENT, "Invalid patient");
 
         healthRecords[_dataHash] = HealthRecord({
             owner: _patientAddress,
@@ -167,7 +141,6 @@ contract EHRmain {
             timestamp: block.timestamp,
             isValid: true,
             provider: msg.sender
-
         });
 
         totalRecords++;
@@ -178,7 +151,7 @@ contract EHRmain {
     function addPHRData(
         bytes32 _dataHash,
         DataType _dataType
-    ) external onlyPatient onlyVerifiedUser returns (bool) {
+    ) external onlyPatient returns (bool) {
         require(healthRecords[_dataHash].dataHash == bytes32(0), "Record already exists");
 
         healthRecords[_dataHash] = HealthRecord({
@@ -223,7 +196,7 @@ contract EHRmain {
         address _owner,
         bytes32 _dataHash,
         PermissionType _permissionType
-    ) external onlyVerifiedUser recordExists(_dataHash) returns (bytes32) {
+    ) external recordExists(_dataHash) returns (bytes32) {
         require(_owner != address(0), "Invalid owner address");
         require(_permissionType != PermissionType.NONE, "Invalid permission type");
         require(healthRecords[_dataHash].owner == _owner, "Invalid record owner");
@@ -258,7 +231,7 @@ contract EHRmain {
         address _owner,
         bytes32 _dataHash,
         PermissionType _permissionType
-    ) external payable onlyVerifiedUser recordExists(_dataHash) returns (bytes32) {
+    ) external payable recordExists(_dataHash) returns (bytes32) {
         require(_owner != address(0), "Invalid owner address");
         require(_permissionType != PermissionType.NONE, "Invalid permission type");
         require(msg.value > 0, "Incentive amount required");
@@ -293,89 +266,34 @@ contract EHRmain {
 
     function approvePermission(
         bytes32 _requestId
-        // bytes memory _encryptedKeyForRequester
-    ) external onlyVerifiedUser returns (bool) {
+    ) external returns (bool) {
         PermissionRequest storage request = permissionRequests[_requestId];
         require(request.owner == msg.sender, "Only owner can approve");
         require(request.status == RequestStatus.PENDING, "Invalid request status");
         require(block.timestamp <= request.expiryDate, "Request expired");
 
         request.status = RequestStatus.APPROVED;
-        permissions[request.requester][request.dataHash][msg.sender] = true;
 
-        if (request.isIncentiveBased) {
-            payable(msg.sender).transfer(request.incentiveAmount);
-        }
+        permissions[request.owner][_requestId][request.requester] = true;
 
-        emit PermissionGranted(_requestId, request.requester, msg.sender);
+        emit PermissionGranted(_requestId, request.requester, request.owner);
         return true;
     }
 
     function revokePermission(
-        address _revokedUser,
-        bytes32 _dataHash
-    ) external recordExists(_dataHash) {
-        require(msg.sender == healthRecords[_dataHash].owner, "Only owner can revoke");
-        require(permissions[_revokedUser][_dataHash][msg.sender], "Permission does not exist");
+        bytes32 _dataHash,
+        address _user
+    ) external onlySystemOwner returns (bool) {
+        require(permissions[msg.sender][_dataHash][_user], "Permission not granted");
 
-        permissions[_revokedUser][_dataHash][msg.sender] = false;
-        emit PermissionRevoked(_dataHash, _revokedUser);
+        permissions[msg.sender][_dataHash][_user] = false;
+        emit PermissionRevoked(_dataHash, _user);
+        return true;
     }
 
-    function checkPermission(
-        address _user,
-        bytes32 _dataHash
-    ) external view returns (bool) {
-        return permissions[_user][_dataHash][healthRecords[_dataHash].owner];
+    // Emergency Access Function
+    function emergencyAccess(address _patientAddress) external onlyProvider {
+        emit EmergencyAccess(msg.sender, _patientAddress, block.timestamp);
     }
 
-    // Emergency Access Functions
-    function grantEmergencyAccess(
-        address _provider,
-        bytes32 _dataHash
-    ) external onlyPatient recordExists(_dataHash) {
-        require(_provider != address(0), "Invalid provider address");
-        (bool isValid, Role role) = checkUser(_provider);
-        require(isValid && role == Role.PROVIDER, "Invalid provider");
-
-        permissions[_provider][_dataHash][msg.sender] = true;
-        emit EmergencyAccess(_provider, msg.sender, block.timestamp);
-    }
-
-    // Utility Functions
-    function getRecordDetails(bytes32 _dataHash) 
-        external 
-        view 
-        recordExists(_dataHash) 
-        returns (
-            address owner,
-            DataType dataType,
-            uint256 timestamp,
-            address provider,
-            bool isValid
-        ) 
-    {
-        HealthRecord memory record = healthRecords[_dataHash];
-        return (
-            record.owner,
-            record.dataType,
-            record.timestamp,
-            record.provider,
-            record.isValid
-        );
-    }
-
-    function getEncryptedKey(bytes32 _dataHash) 
-        external 
-        view 
-        recordExists(_dataHash) 
-        returns (bytes memory) 
-    {
-        require(
-            msg.sender == healthRecords[_dataHash].owner || 
-            permissions[msg.sender][_dataHash][healthRecords[_dataHash].owner],
-            "Unauthorized"
-        );
-        return healthRecords[_dataHash].encryptedSymmetricKey;
-    }
 }
