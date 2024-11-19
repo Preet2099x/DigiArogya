@@ -35,7 +35,7 @@ const Login = () => {
   useEffect(() => {
     connectWallet(); // Automatically connect wallet on component mount
   }, []);
-  
+
   useEffect(() => {
     const handleAccountsChanged = (accounts) => {
       if (accounts.length > 0) {
@@ -56,7 +56,6 @@ const Login = () => {
       }
     };
   }, []);
-
   const handleLogin = async () => {
     if (!walletAddress) {
       alert('Please enter your wallet address');

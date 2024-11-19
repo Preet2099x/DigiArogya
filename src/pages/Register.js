@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import contractABI from '../contractABI.json'; // Ensure the ABI is correctly imported
 
-const contractAddress = '0x168D01b5244739fc48Eb2c9490B7Bf4491C6fa1f'; // Replace with your deployed contract address
+const contractAddress = '0xA1CFD69E0fBC00804ff4C7c641c9255AA325D431'; // Replace with your deployed contract address
 
 const Register = () => {
   const [role, setRole] = useState('');
