@@ -5,8 +5,8 @@ import contractABI from '../contractABI.json'; // Ensure ABI is correctly import
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-const contractAddress = '0x168D01b5244739fc48Eb2c9490B7Bf4491C6fa1f'; // Replace with your deployed contract address
-const adminAddress = '0xB8f4122551de5a51d5453dfBDa477c3640A8a475'; // Admin wallet address
+const contractAddress = '0xA1CFD69E0fBC00804ff4C7c641c9255AA325D431'; // Replace with your deployed contract address
+const adminAddress = '0x433FfF79F2c420f309B21FADeabc4d527D694992'; // Admin wallet address
 
 const Login = () => {
   const navigate = useNavigate();

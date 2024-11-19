@@ -5,6 +5,12 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    console.log("User logged out");
+    alert("Logged out successfully!");
+    navigate('/'); // Redirect to the login screen
+  };
+
   return (
     <Box p={6} maxWidth="md" mx="auto" textAlign="center">
       <Typography variant="h3" fontWeight="bold" mb={4}>
@@ -25,6 +31,16 @@ const Dashboard = () => {
           onClick={() => navigate('/dashboard/doctor')}
         >
           Doctor
+        </Button>
+      </Box>
+
+      <Box display="flex" justifyContent="center" mt={6}>
+        <Button 
+          variant="outlined" 
+          color="error" 
+          onClick={handleLogout}
+        >
+          Logout
         </Button>
       </Box>
     </Box>
