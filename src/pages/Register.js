@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import contractABI from '../contractABI.json'; // Ensure the ABI is correctly imported
-import { toast } from 'react-toastify'; 
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
-import { ToastContainer } from 'react-toastify'; // Toast container for rendering notifications
 
-const contractAddress = '0xa973ca2b575388367103A68f30b70605420aA991'; // Replace with your deployed contract address
+const contractAddress = '0x168D01b5244739fc48Eb2c9490B7Bf4491C6fa1f'; // Replace with your deployed contract address
 
 const Register = () => {
   const [role, setRole] = useState('');
@@ -20,7 +17,7 @@ const Register = () => {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      toast.error('MetaMask is required to register!');
+      alert('MetaMask is required to register!');
       return null;
     }
     const provider = new ethers.BrowserProvider(window.ethereum);
@@ -49,10 +46,10 @@ const Register = () => {
       const tx = await contract.registerUser(roleValue, publicKeyHash);
       await tx.wait(); // Wait for transaction to be mined
 
-      toast.success(`${role} registered successfully!`);
+      alert(`${role} registered successfully!`);
     } catch (error) {
       console.error("Error during registration:", error);
-      toast.error(`Registration failed: User Already Registerd`);
+      alert('Registration failed: User already registered or other error');
     } finally {
       setLoading(false);
     }
@@ -60,7 +57,6 @@ const Register = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-300">
-      <ToastContainer /> {/* Required to display toast messages */}
       <div className="max-w-md w-full bg-white p-8 rounded shadow">
         <h1 className="text-2xl font-bold mb-4">Register</h1>
         <div className="mb-4">

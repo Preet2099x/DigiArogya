@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import contractABI from '../contractABI.json'; // Ensure ABI is correctly imported
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
-import { ToastContainer } from 'react-toastify'; // Toast container for rendering notifications
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-const contractAddress = '0xa973ca2b575388367103A68f30b70605420aA991'; // Replace with your deployed contract address
-const adminAddress = '0xf09e1779f16B67FE17f66274A61f97a803afd0A0'; // Admin wallet address
+const contractAddress = '0x168D01b5244739fc48Eb2c9490B7Bf4491C6fa1f'; // Replace with your deployed contract address
+const adminAddress = '0xB8f4122551de5a51d5453dfBDa477c3640A8a475'; // Admin wallet address
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,21 +14,31 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const connectWallet = async () => {
-    if (!window.ethereum) {
-      toast.error('MetaMask is required to log in!');
-      return null;
-    }
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send('eth_requestAccounts', []); // Request user's Ethereum account
-    const signer = provider.getSigner();
-    return signer;
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+        setWalletAddress(userAddress);
+        return signer;
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        alert('Failed to connect wallet. Please try again.');
+      }
+    } else {
+      alert('MetaMask is not installed.');
+    }
   };
 
+  useEffect(() => {
+    connectWallet(); // Automatically connect wallet on component mount
+  }, []);
+
   const handleLogin = async () => {
-    console.log('logging');
     if (!walletAddress) {
-      toast.error('Please enter your wallet address');
+      alert('Please enter your wallet address');
       return;
     }
 
@@ -41,67 +48,56 @@ const Login = () => {
       if (!signer) return;
 
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-
-      const userRole = await contract.checkUser(walletAddress); // Returns BigNumber or BigInt
+      const userRole = await contract.checkUser(walletAddress);
       console.log(userRole);
 
-      // Convert userRole to a string for comparison
-      const role = userRole.toString(); // Convert BigNumber to string if using ethers.js
+      const role = userRole.toString();
 
       if (role === '0') {
-        toast.error('User is not registered');
+        alert('User is not registered');
         return;
       }
 
-      // Handle user roles and navigate accordingly
       switch (role) {
-        case '1': // Patient
-          toast.success('Logged in as Patient');
-          navigate('/dashboard/patient'); // Navigate to patient dashboard
+        case '1':
+          alert('Logged in as Patient');
+          navigate('/dashboard/patient');
           break;
-        case '2': // Provider (Doctor)
-          toast.success('Logged in as Doctor');
-          navigate('/dashboard/doctor'); // Navigate to doctor dashboard
+        case '2':
+          alert('Logged in as Doctor');
+          navigate('/dashboard/doctor');
           break;
-        case '3': // Researcher
-          toast.success('Logged in as Researcher');
-          navigate('/dashboard'); // Navigate to main dashboard or researcher page
+        case '3':
+          alert('Logged in as Researcher');
+          navigate('/dashboard');
           break;
         default:
-          // Admin role (manual check)
           if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
-            toast.success('Logged in as Admin');
-            navigate('/admin'); // Navigate to admin panel
+            alert('Logged in as Admin');
+            navigate('/admin');
           } else {
-            toast.error('Unknown role or insufficient permissions');
+            alert('Unknown role or insufficient permissions');
           }
       }
     } catch (error) {
       console.error('Login failed:', error);
-      toast.error(`Login failed: ${error.message}`);
+      alert(`Login failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdminLogin = async () => {
-    if (!walletAddress) {
-      toast.error('Please enter your wallet address');
-      return;
-    }
-
-    // Admin-specific login check
+  const handleAdminLogin = () => {
     if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
-      toast.success('Logged in as Admin');
-      navigate('/admin'); // Navigate to admin panel
+      alert('Logged in as Admin');
+      navigate('/admin');
     } else {
-      toast.error('You are not authorized to log in as Admin');
+      alert('You are not authorized to log in as Admin');
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-300">
-      <ToastContainer /> {/* Required to display toast messages */}
       <div className="max-w-md w-full bg-white p-8 rounded shadow">
         <h1 className="text-2xl font-bold mb-4">Login</h1>
 
@@ -126,7 +122,6 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Admin Login Button */}
         <div className="mt-4 text-center">
           <p>
             <button
