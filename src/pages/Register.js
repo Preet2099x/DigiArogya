@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { keccak256, toUtf8Bytes, isAddress } from 'ethers'; // Import specific utilities
 import contractABI from '../contractABI.json'; // Ensure the ABI is correctly imported
 
-const contractAddress = '0xA1CFD69E0fBC00804ff4C7c641c9255AA325D431'; // Replace with your deployed contract address
+const contractAddress = '0x833B1510f2bBcfBE9D558724DAbd2E8e5dbd06b8'; // Replace with your deployed contract address
 
 const Register = () => {
   const [role, setRole] = useState('');
@@ -10,6 +11,63 @@ const Register = () => {
     publicKeyHash: '',
   });
   const [loading, setLoading] = useState(false);
+
+  const generateAddressHashFromMetaMask = async () => {
+    if (!window.ethereum) {
+      alert("MetaMask is not installed!");
+      return null;
+    }
+  
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+      const publicAddress = signer.address; // Use the `address` property instead of `getAddress`
+  
+      if (!isAddress(publicAddress)) {
+        throw new Error("Invalid Ethereum address");
+      }
+  
+      const addressHash = keccak256(toUtf8Bytes(publicAddress));
+      return addressHash;
+    } catch (error) {
+      console.error("Error generating hash:", error.message);
+      alert("Failed to fetch the wallet address or generate the hash.");
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchPublicKeyHash = async () => {
+      const hash = await generateAddressHashFromMetaMask();
+      if (hash) {
+        setFormData((prev) => ({ ...prev, publicKeyHash: hash }));
+      }
+    };
+
+    fetchPublicKeyHash();
+  }, []); // Runs only once when the component is mounted
+
+  useEffect(() => {
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length > 0) {
+        window.location.reload(); // Reload the page when the account changes
+      } else {
+        alert('Please connect to MetaMask.');
+      }
+    };
+  
+    if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    }
+  
+    // Cleanup listener on component unmount
+    return () => {
+      if (typeof window.ethereum !== 'undefined') {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -82,6 +140,7 @@ const Register = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
+              readOnly // Make the field read-only since it's auto-filled
             />
           </div>
           <button

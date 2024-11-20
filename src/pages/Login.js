@@ -5,8 +5,8 @@ import contractABI from '../contractABI.json'; // Ensure ABI is correctly import
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-const contractAddress = '0xA1CFD69E0fBC00804ff4C7c641c9255AA325D431'; // Replace with your deployed contract address
-const adminAddress = '0x433FfF79F2c420f309B21FADeabc4d527D694992'; // Admin wallet address
+const contractAddress = '0x833B1510f2bBcfBE9D558724DAbd2E8e5dbd06b8'; // Replace with your deployed contract address
+const adminAddress = '0xcD38E1Da94c04DE9e0a662b090de5e36D4163Dd2'; // Admin wallet address
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,6 +36,26 @@ const Login = () => {
     connectWallet(); // Automatically connect wallet on component mount
   }, []);
 
+  useEffect(() => {
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length > 0) {
+        window.location.reload(); // Reload the page when the account changes
+      } else {
+        alert('Please connect to MetaMask.');
+      }
+    };
+  
+    if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    }
+  
+    // Cleanup listener on component unmount
+    return () => {
+      if (typeof window.ethereum !== 'undefined') {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, []);
   const handleLogin = async () => {
     if (!walletAddress) {
       alert('Please enter your wallet address');
@@ -104,8 +124,9 @@ const Login = () => {
         <Input
           label="Wallet Address"
           value={walletAddress}
-          onChange={(e) => setWalletAddress(e.target.value)}
+          onChange={(e) => setWalletAddress(e.target.value)} // You can disable this if the field should be non-editable
           placeholder="Enter your wallet address"
+          readOnly // Add this to make the field non-editable
         />
 
         <Button label={loading ? 'Logging in...' : 'Login'} onClick={handleLogin} disabled={loading} />
@@ -126,7 +147,7 @@ const Login = () => {
           <p>
             <button
               className="text-red-500 underline"
-              onClick={handleAdminLogin}
+              onClick={() =>  handleAdminLogin('/admin-login')}
             >
               Login as Administrator
             </button>
