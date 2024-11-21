@@ -12,6 +12,7 @@
 /build
 
 # misc
+/contract/build/*
 .env
 .DS_Store
 .env.local
