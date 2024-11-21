@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes, isAddress } from 'ethers'; // Import specific utilities
 import contractABI from '../contractABI.json'; // Ensure the ABI is correctly imported
 
-const contractAddress = '0x833B1510f2bBcfBE9D558724DAbd2E8e5dbd06b8'; // Replace with your deployed contract address
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;; //  contract address
 
 const Register = () => {
   const [role, setRole] = useState('');

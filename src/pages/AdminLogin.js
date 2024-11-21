@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [walletAddress, setWalletAddress] = useState('');
   const [error, setError] = useState('');
 
-  const systemOwnerWallet = '0x123...owner'; // Replace with the actual owner's wallet address from the smart contract.
+  const systemOwnerWallet = process.env.REACT_APP_ADMIN_ADDRESS; // owner's wallet address from the smart contract.
 
   const handleLogin = () => {
     if (walletAddress === systemOwnerWallet) {

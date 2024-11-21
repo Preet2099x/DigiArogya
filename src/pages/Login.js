@@ -5,13 +5,15 @@ import contractABI from '../contractABI.json'; // Ensure ABI is correctly import
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-const contractAddress = '0x833B1510f2bBcfBE9D558724DAbd2E8e5dbd06b8'; // Replace with your deployed contract address
-const adminAddress = '0xcD38E1Da94c04DE9e0a662b090de5e36D4163Dd2'; // Admin wallet address
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+const adminAddress = process.env.REACT_APP_ADMIN_ADDRESS;
 
 const Login = () => {
   const navigate = useNavigate();
   const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // console.log(process.env.REACT_APP_CONTRACT_ADDRESS);
 
   const connectWallet = async () => {
     if (typeof window.ethereum !== 'undefined') {

@@ -31070,12 +31070,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x2Bd082E366D55F1bbbf9cDE6BEDc4a797Ea374b4",
-      "transactionHash": "0x13ba3763f5e55d29690a0f0f0158acf7fe0b83271d5920ff1bb3d02bd16368a7"
+      "address": "0x59473f35fD68fe9565C0840402B7199FA7E054F0",
+      "transactionHash": "0x8b49617c72210ab5d8009a5a364456a6d9780c540a3bb50d3240f3a94c2d456a"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2024-11-19T20:52:49.576Z",
+  "updatedAt": "2024-11-21T15:29:39.298Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
