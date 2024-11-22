@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LogoutButton from './LogoutButton';
+import { ToastContainer } from "react-toastify";
 import {
   Box,
   Card,
@@ -32,7 +34,6 @@ import {
   WarningAmber,
   Add,
   Key,
-  BarChart,
 } from '@mui/icons-material';
 
 const PatientDashboard = () => {
@@ -52,17 +53,12 @@ const PatientDashboard = () => {
   ]);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [toastOpen, setToastOpen] = useState(false);
 
   const navigate = useNavigate();
 
   const handleChange = (event, newValue) => {
     setTabValue(newValue);
-  };
-
-  const handleLogout = () => {
-    console.log('User logged out');
-    alert('Logged out successfully!');
-    navigate('/');
   };
 
   const handleUploadDialog = (open) => {
@@ -88,7 +84,7 @@ const PatientDashboard = () => {
       ...prev,
       {
         dataHash: '0x' + Math.random().toString(16).substr(2, 8),
-        dataType: 'Uploaded File',
+        dataType: 'PHR',
         timestamp: new Date().toISOString().split('T')[0],
         provider: 'Self',
         isValid: true,
@@ -114,22 +110,28 @@ const PatientDashboard = () => {
             Patient Dashboard
           </Typography>
           <Box display="flex" alignItems="center" gap={2}>
-            <Box display="flex" alignItems="center" color="success.main">
+            {/* Commented out Verified Patient section */}
+            {/* <Box display="flex" alignItems="center" color="success.main">
               <Avatar sx={{ bgcolor: 'success.main', color: 'white', mr: 1 }}>
                 <Shield />
               </Avatar>
               <Typography fontWeight="bold" color="text.primary">
                 Verified Patient
               </Typography>
-            </Box>
-            <Button variant="outlined" color="error" onClick={handleLogout}>
-              Logout
-            </Button>
+            </Box> */}
+            <div>
+      {/* Render the logout button */}
+      <LogoutButton />
+      
+      {/* ToastContainer to display toasts */}
+      <ToastContainer />
+    </div>
+
           </Box>
         </Box>
 
         {/* Cards for summary */}
-        <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4} mb={4}>
+        {/* <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4} mb={4}>
           <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
             <CardHeader
               avatar={<Description color="disabled" />}
@@ -168,7 +170,7 @@ const PatientDashboard = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Box>
+        </Box> */}
 
         {/* Tabs for navigation */}
         <Tabs
@@ -183,14 +185,6 @@ const PatientDashboard = () => {
           />
           <Tab
             label="Permission Requests"
-            sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }}
-          />
-          <Tab
-            label="Emergency Access"
-            sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }}
-          />
-          <Tab
-            label="Analytics"
             sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }}
           />
         </Tabs>
@@ -306,7 +300,7 @@ const PatientDashboard = () => {
           </TableContainer>
         )}
 
-        {/* Placeholder content for tabs */}
+        {/* Removed placeholder content for commented out tabs */}
         {tabValue === 2 && <Typography variant="h6">Emergency Access is currently disabled.</Typography>}
         {tabValue === 3 && <Typography variant="h6">Analytics is currently under development.</Typography>}
 

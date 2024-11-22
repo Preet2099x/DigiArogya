@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import LogoutButton from './LogoutButton';
 import { 
   Card, 
   CardHeader, 
@@ -14,7 +15,13 @@ import {
   InputLabel, 
   FormControl, 
   Box, 
-  Grid 
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { 
   Shield, 
@@ -23,7 +30,8 @@ import {
   Clock,
   Plus,
   Search,
-  Upload 
+  Upload,
+  X 
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
@@ -47,17 +55,97 @@ const DoctorDashboard = () => {
   ]);
 
   const [tabValue, setTabValue] = useState(0);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const [openNewPatientDialog, setOpenNewPatientDialog] = useState(false);
+  const [newPatientAddress, setNewPatientAddress] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingRecord, setUploadingRecord] = useState(false);
+  const [patientAddress, setPatientAddress] = useState('');
+  const [recordType, setRecordType] = useState('');
+  const [openAlert, setOpenAlert] = useState(false);
+  const navigate = useNavigate();
 
+  const [toggleState, setToggleState] = useState({ toggle: false });
+
+  const handleToggle = () => {
+    setToggleState(prevState => ({ ...prevState, toggle: !prevState.toggle }));
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
-  const logout = () => {
-    console.log("User logged out");
-    alert("Logged out successfully!");
-    navigate('/'); // Redirect to the login screen
+  const handleNewPatientClick = () => {
+    setOpenNewPatientDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenNewPatientDialog(false);
+    setNewPatientAddress('');
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      console.log(`File selected: ${file.name}`);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+  };
+
+  const handleCloseAlert = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenAlert(false);
+  };
+
+  const handleSendRequest = async () => {
+    try {
+      // Here you would implement the actual blockchain interaction
+      // For now, we'll simulate it with a timeout
+      console.log(`Sending request to ${newPatientAddress}...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('Request sent successfully!');
+      handleCloseDialog();
+      
+      // Add the new patient to the list
+      setPatients(prev => [...prev, {
+        address: newPatientAddress,
+        recordCount: 0,
+        lastVisit: '-',
+        status: 'Pending'
+      }]);
+    } catch (error) {
+      console.error('Failed to send request. Please try again.');
+    }
+  };
+
+  const handleUploadRecord = async () => {
+    if (!selectedFile || !patientAddress || !recordType) {
+      console.error('Please fill in all fields and select a file');
+      return;
+    }
+
+    try {
+      setUploadingRecord(true);
+      // Here you would implement the actual file upload and blockchain interaction
+      // For now, we'll simulate it with a timeout
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('Record uploaded successfully!');
+      setSelectedFile(null);
+      setPatientAddress('');
+      setRecordType('');
+      setOpenAlert(true); // Show success alert
+    } catch (error) {
+      console.error('Failed to upload record. Please try again.');
+    } finally {
+      setUploadingRecord(false);
+    }
   };
 
   return (
@@ -73,25 +161,16 @@ const DoctorDashboard = () => {
       <Box sx={{ p: 6, maxWidth: '1200px', mx: 'auto', gap: 6, background: '#f4f6f9', borderRadius: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
           <Typography variant="h4" fontWeight="bold" color="primary">Doctor Dashboard</Typography>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Shield className="text-blue-500" />
-            <Typography color="primary" fontWeight="bold">Verified Provider</Typography>
-            <Button 
-              variant="outlined" 
-              color="error" 
-              onClick={logout}
-              sx={{ ml: 2 }}
-            >
-              Logout
-            </Button>
-          </Box>
+          <div>
+            <LogoutButton />
+          </div>
         </Box>
 
-        <Grid container spacing={4}>
+        {/* <Grid container spacing={4}>
           <Grid item xs={12} md={4}>
             <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
               <CardHeader
-                avatar={<Users fontSize="small" />}
+                avatar={<Users size={20} />}
                 title="Total Patients"
                 titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
               />
@@ -103,7 +182,7 @@ const DoctorDashboard = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
               <CardHeader
-                avatar={<FileText fontSize="small" />}
+                avatar={<FileText size={20} />}
                 title="Records Access"
                 titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
               />
@@ -115,7 +194,7 @@ const DoctorDashboard = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
               <CardHeader
-                avatar={<Clock fontSize="small" />}
+                avatar={<Clock size={20} />}
                 title="Pending Requests"
                 titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
               />
@@ -124,7 +203,7 @@ const DoctorDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
-        </Grid>
+        </Grid> */}
 
         <Box mt={4}>
           <Tabs
@@ -153,18 +232,12 @@ const DoctorDashboard = () => {
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6" color="textSecondary">Patient List</Typography>
               <Box display="flex" gap={2}>
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  placeholder="Search patients..."
-                  InputProps={{
-                    startAdornment: (
-                      <Search style={{ marginRight: '8px', color: '#999' }} />
-                    ),
-                  }}
-                  sx={{ backgroundColor: 'white', borderRadius: 1 }}
-                />
-                <Button variant="contained" startIcon={<Plus />} sx={{ backgroundColor: '#00796b' }}>
+                <Button 
+                  variant="contained" 
+                  startIcon={<Plus />} 
+                  sx={{ backgroundColor: '#00796b' }}
+                  onClick={handleNewPatientClick}
+                >
                   New Patient
                 </Button>
               </Box>
@@ -190,11 +263,15 @@ const DoctorDashboard = () => {
                           <td style={{ padding: '12px' }}>{patient.recordCount}</td>
                           <td style={{ padding: '12px' }}>{patient.lastVisit}</td>
                           <td style={{ padding: '12px' }}>
-                            <Typography variant="body2" color="success.main">{patient.status}</Typography>
+                            <Typography 
+                              variant="body2" 
+                              color={patient.status === 'Active' ? 'success.main' : 'warning.main'}
+                            >
+                              {patient.status}
+                            </Typography>
                           </td>
                           <td style={{ padding: '12px' }}>
                             <Button variant="outlined" size="small" sx={{ marginRight: 1 }}>View Records</Button>
-                            <Button variant="outlined" size="small">Request Access</Button>
                           </td>
                         </tr>
                       ))}
@@ -250,30 +327,113 @@ const DoctorDashboard = () => {
                   placeholder="0x..."
                   fullWidth
                   sx={{ backgroundColor: 'white' }}
+                  value={patientAddress}
+                  onChange={(e) => setPatientAddress(e.target.value)}
                 />
                 <FormControl fullWidth sx={{ backgroundColor: 'white' }}>
                   <InputLabel>Record Type</InputLabel>
-                  <Select>
+                  <Select
+                    value={recordType}
+                    onChange={(e) => setRecordType(e.target.value)}
+                  >
                     <MenuItem value="EHR">Electronic Health Record (EHR)</MenuItem>
                     <MenuItem value="LAB_RESULT">Lab Result</MenuItem>
                     <MenuItem value="PRESCRIPTION">Prescription</MenuItem>
                     <MenuItem value="IMAGING">Imaging</MenuItem>
                   </Select>
                 </FormControl>
-                <Box display="flex" justifyContent="center" alignItems="center" border="1px dashed" borderRadius={1} p={4}>
-                  <Upload style={{ fontSize: '48px', color: '#00796b' }} />
-                  <Button variant="contained" component="label" sx={{ backgroundColor: '#004d40' }}>
-                    Upload File
-                    <input type="file" hidden />
-                  </Button>
+                <Box 
+                  display="flex" 
+                  flexDirection="column"
+                  justifyContent="center" 
+                  alignItems="center" 
+                  border="1px dashed" 
+                  borderRadius={1} 
+                  p={4}
+                >
+                  {selectedFile ? (
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography>{selectedFile.name}</Typography>
+                      <Button 
+                        variant="outlined" 
+                        color="error" 
+                        size="small"
+                        onClick={handleRemoveFile}
+                      >
+                        <X size={16} />
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
+                      <Upload style={{ fontSize: '48px', color: '#00796b' }} />
+                      <Button 
+                        variant="contained" 
+                        component="label" 
+                        sx={{ backgroundColor: '#004d40', mt: 2 }}
+                      >
+                        Select File
+                        <input 
+                          type="file" 
+                          hidden 
+                          onChange={handleFileSelect}
+                        />
+                      </Button>
+                    </>
+                  )}
                 </Box>
-                <Button variant="contained" startIcon={<Upload />} fullWidth sx={{ backgroundColor: '#00796b' }}>
-                  Upload Record
+                <Button 
+                  variant="contained" 
+                  startIcon={<Upload />} 
+                  fullWidth 
+                  sx={{ backgroundColor: '#00796b' }}
+                  onClick={handleUploadRecord}
+                  disabled={uploadingRecord || !selectedFile}
+                >
+                  {uploadingRecord ? 'Uploading...' : 'Upload Record'}
                 </Button>
               </Box>
             </CardContent>
           </Card>
         )}
+
+        <Dialog open={openNewPatientDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Add New Patient</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Patient Ethereum Address"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={newPatientAddress}
+              onChange={(e) => setNewPatientAddress(e.target.value)}
+              placeholder="0x..."
+            />
+          </DialogContent>
+          <DialogActions><Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSendRequest} variant="contained">
+              Send Request
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Success Alert */}
+        <Snackbar 
+          open={openAlert} 
+          autoHideDuration={6000} 
+          onClose={handleCloseAlert}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert 
+            onClose={handleCloseAlert} 
+            severity="success" 
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            File uploaded successfully!
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );
