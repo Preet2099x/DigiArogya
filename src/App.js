@@ -22,7 +22,7 @@ const App = () => {
         <Route path="/dashboard/doctor" element={<DoctorDashboard />} />
         <Route path="/dashboard/researcher" element={<ResearcherDashboard />} />
       </Routes>
-      
+
       {/* Include the ToastContainer */}
       <ToastContainer position="top-right" autoClose={5000} />
     </Router>
