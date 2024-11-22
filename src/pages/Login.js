@@ -91,7 +91,7 @@ const Login = () => {
           break;
         case '3':
           alert('Logged in as Researcher');
-          navigate('/dashboard');
+          navigate('/dashboard/researcher');
           break;
         default:
           if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
