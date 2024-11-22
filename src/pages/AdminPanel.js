@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import LogoutButton from '../components/LogoutButton';
+import { ToastContainer } from "react-toastify";
 
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
@@ -38,7 +40,16 @@ const AdminPanel = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-300">
       <div className="max-w-4xl w-full bg-white p-8 rounded shadow">
-        <h1 className="text-2xl font-bold mb-4">Admin Panel</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Admin Panel</h1>
+          <div>
+      {/* Render the logout button */}
+      <LogoutButton />
+      
+      {/* ToastContainer to display toasts */}
+      <ToastContainer />
+    </div>
+        </div>
 
         {/* User List */}
         <div className="overflow-x-auto">
