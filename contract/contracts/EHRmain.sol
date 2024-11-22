@@ -9,7 +9,7 @@ contract EHRmain {
     enum DataType { EHR, PHR, LAB_RESULT, PRESCRIPTION, IMAGING }
     
     // Permission types
-    enum PermissionType { NONE, READ, WRITE, FULL }
+    enum PermissionType { NONE, INCENTIVEBASED, NONINCENTIVEBASED }
     
     // Status of permission requests
     enum RequestStatus { PENDING, APPROVED, REJECTED, EXPIRED }
@@ -64,7 +64,7 @@ contract EHRmain {
     event PermissionRequested(bytes32 indexed requestId, address indexed requester, address indexed owner);
     event PermissionGranted(bytes32 indexed requestId, address indexed requester, address indexed owner);
     event PermissionRevoked(bytes32 indexed dataHash, address indexed revokedUser);
-    event RecordUpdated(bytes32 indexed dataHash, address indexed updater);
+    // event RecordUpdated(bytes32 indexed dataHash, address indexed updater);
     event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
 
     // Modifiers
@@ -169,19 +169,19 @@ contract EHRmain {
         return true;
     }
 
-    function updateRecord(
-        bytes32 _dataHash,
-        bytes memory _newEncryptedSymmetricKey
-    ) external recordExists(_dataHash) returns (bool) {
-        HealthRecord storage record = healthRecords[_dataHash];
-        require(msg.sender == record.owner || msg.sender == record.provider, "Unauthorized");
+    // function updateRecord(
+    //     bytes32 _dataHash,
+    //     bytes memory _newEncryptedSymmetricKey
+    // ) external recordExists(_dataHash) returns (bool) {
+    //     HealthRecord storage record = healthRecords[_dataHash];
+    //     require(msg.sender == record.owner || msg.sender == record.provider, "Unauthorized");
 
-        record.encryptedSymmetricKey = _newEncryptedSymmetricKey;
-        record.timestamp = block.timestamp;
+    //     record.encryptedSymmetricKey = _newEncryptedSymmetricKey;
+    //     record.timestamp = block.timestamp;
 
-        emit RecordUpdated(_dataHash, msg.sender);
-        return true;
-    }
+    //     emit RecordUpdated(_dataHash, msg.sender);
+    //     return true;
+    // }
 
     function invalidateRecord(bytes32 _dataHash) 
         external 
