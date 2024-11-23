@@ -33,7 +33,7 @@ const AdminPanel = () => {
   }, []);
 
   const handleAction = (userWallet, actionType) => {
-    console.log(`Performing ${actionType} on ${userWallet}`);
+    console.log(```Performing ${actionType} on ${userWallet}```);
     // Update user status logic here
   };
 
