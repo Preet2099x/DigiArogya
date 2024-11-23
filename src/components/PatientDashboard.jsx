@@ -42,13 +42,13 @@ const PatientDashboard = () => {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userPublicKey = await signer.getAddress();
-  
+
       // Interact with the smart contract to fetch records
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      
+
       // Fetch records using the user's address
       const records = await contract.getHealthRecordsByOwner(userPublicKey);
-  
+
       // Update state with the fetched records directly from the blockchain
       const fetchedRecords = records.map((record) => ({
         ipfsCid: record.ipfsCid,
@@ -57,7 +57,7 @@ const PatientDashboard = () => {
         timestamp: Number(record.timestamp), // Convert BigInt to Number
         isValid: record.isValid,
       }));
-  
+
       // Reverse the records array to show the latest first
       setHealthRecords(fetchedRecords.reverse());
     } catch (error) {
@@ -133,8 +133,8 @@ const PatientDashboard = () => {
                       <TableCell>{record.provider}</TableCell>
                       <TableCell>
                         {record.timestamp
-                         ? format(new Date(record.timestamp * 1000), 'MM/dd/yyyy')
-                        : 'Invalid Date'}
+                          ? format(new Date(record.timestamp * 1000), 'MM/dd/yyyy')
+                          : 'Invalid Date'}
                       </TableCell>{/* Format date properly */}
                       <TableCell>
                         <Chip label={record.isValid ? "Valid" : "Invalid"} color={record.isValid ? "success" : "error"} size="small" />
@@ -196,13 +196,11 @@ const PatientDashboard = () => {
           </TableContainer>
         )}
 
-        {/* Upload Dialog */}
         <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
-        <FileUploader 
-    onClose={() => handleUploadDialog(false)} 
-    onUpload={handleNewRecord} 
-/>
-
+          <FileUploader
+            onClose={() => handleUploadDialog(false)}
+            onUpload={handleNewRecord}
+          />
         </Dialog>
       </Box>
     </Box>
