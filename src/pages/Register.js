@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { keccak256, toUtf8Bytes, isAddress } from 'ethers'; // Import specific utilities
-import contractABI from '../contractABI.json'; // Ensure the ABI is correctly imported
+import { keccak256, toUtf8Bytes, isAddress } from 'ethers';
+import { ToastContainer, toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import 'react-toastify/dist/ReactToastify.css';
+import contractABI from '../contractABI.json';
 
-const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;; //  contract address
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const Register = () => {
   const [role, setRole] = useState('');
@@ -11,10 +14,11 @@ const Register = () => {
     publicKeyHash: '',
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const generateAddressHashFromMetaMask = async () => {
     if (!window.ethereum) {
-      alert("MetaMask is not installed!");
+      toast.error("MetaMask is not installed!");
       return null;
     }
   
@@ -22,7 +26,7 @@ const Register = () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = await provider.getSigner();
-      const publicAddress = signer.address; // Use the `address` property instead of `getAddress`
+      const publicAddress = signer.address;
   
       if (!isAddress(publicAddress)) {
         throw new Error("Invalid Ethereum address");
@@ -32,7 +36,7 @@ const Register = () => {
       return addressHash;
     } catch (error) {
       console.error("Error generating hash:", error.message);
-      alert("Failed to fetch the wallet address or generate the hash.");
+      toast.error("Failed to fetch the wallet address or generate the hash.");
       return null;
     }
   };
@@ -46,14 +50,14 @@ const Register = () => {
     };
 
     fetchPublicKeyHash();
-  }, []); // Runs only once when the component is mounted
+  }, []);
 
   useEffect(() => {
     const handleAccountsChanged = (accounts) => {
       if (accounts.length > 0) {
-        window.location.reload(); // Reload the page when the account changes
+        window.location.reload();
       } else {
-        alert('Please connect to MetaMask.');
+        toast.warning('Please connect to MetaMask.');
       }
     };
   
@@ -61,7 +65,6 @@ const Register = () => {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
     }
   
-    // Cleanup listener on component unmount
     return () => {
       if (typeof window.ethereum !== 'undefined') {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
@@ -75,17 +78,22 @@ const Register = () => {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert('MetaMask is required to register!');
+      toast.error('MetaMask is required to register!');
       return null;
     }
     const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send('eth_requestAccounts', []); // Request user's Ethereum account
+    await provider.send('eth_requestAccounts', []);
     const signer = provider.getSigner();
     return signer;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!role) {
+      toast.warning('Please select a role before registering.');
+      return;
+    }
+    
     setLoading(true);
     try {
       const signer = await connectWallet();
@@ -95,22 +103,32 @@ const Register = () => {
       const { publicKeyHash } = formData;
 
       const roleMap = { PATIENT: 1, PROVIDER: 2, RESEARCHER: 3 };
-      const roleValue = roleMap[role]; // Map role to its enum value
+      const roleValue = roleMap[role];
 
       if (!contract.registerUser) {
         throw new Error("Contract function registerUser not found");
       }
 
       const tx = await contract.registerUser(roleValue, publicKeyHash);
-      await tx.wait(); // Wait for transaction to be mined
+      await tx.wait();
 
-      alert(`${role} registered successfully!`);
+      toast.success(`${role} registered successfully!`);
+      
+      // Delay navigation slightly to allow toast to be seen
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
     } catch (error) {
       console.error("Error during registration:", error);
-      alert('Registration failed: User already registered or other error');
+      toast.error('Registration failed: User already registered or other error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoginRedirect = () => {
+    navigate('/');
   };
 
   return (
@@ -140,19 +158,37 @@ const Register = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
-              readOnly // Make the field read-only since it's auto-filled
+              readOnly
             />
           </div>
           <button
             type="submit"
-            className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
             disabled={loading}
           >
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
-        {loading && <p className="text-center text-blue-500">Processing...</p>}
+        <button
+          onClick={handleLoginRedirect}
+          className="w-full px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          Move to Login
+        </button>
+        {loading && <p className="text-center text-blue-500 mt-4">Processing...</p>}
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={1000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };
