@@ -1,5 +1,5 @@
 {
-    "abi": [
+   "abi": [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
@@ -35,9 +35,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
-          "name": "dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
         },
         {
           "indexed": true,
@@ -60,9 +60,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "requestId",
-          "type": "bytes32"
+          "type": "string"
         },
         {
           "indexed": true,
@@ -85,9 +85,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "requestId",
-          "type": "bytes32"
+          "type": "string"
         },
         {
           "indexed": true,
@@ -110,9 +110,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
-          "name": "dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
         },
         {
           "indexed": true,
@@ -146,9 +146,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "name": "healthRecords",
@@ -159,9 +159,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
-          "name": "dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.DataType",
@@ -196,9 +196,34 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "address",
           "name": "",
-          "type": "bytes32"
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "ownerToHealthRecords",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "name": "permissionRequests",
@@ -214,9 +239,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
-          "name": "dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.PermissionType",
@@ -261,9 +286,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "",
-          "type": "bytes32"
+          "type": "string"
         },
         {
           "internalType": "address",
@@ -426,9 +451,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.DataType",
@@ -455,9 +480,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.DataType",
@@ -479,9 +504,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         }
       ],
       "name": "invalidateRecord",
@@ -497,9 +522,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.PermissionType",
@@ -510,9 +535,9 @@
       "name": "requestNonIncentiveBasedPermission",
       "outputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "stateMutability": "nonpayable",
@@ -526,9 +551,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "enum EHRmain.PermissionType",
@@ -539,9 +564,9 @@
       "name": "requestIncentiveBasedPermission",
       "outputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "stateMutability": "payable",
@@ -551,9 +576,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "string",
           "name": "_requestId",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "name": "approvePermission",
@@ -570,9 +595,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "_dataHash",
-          "type": "bytes32"
+          "internalType": "string",
+          "name": "_ipfsCid",
+          "type": "string"
         },
         {
           "internalType": "address",
@@ -595,12 +620,75 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "userAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getHealthRecordsByOwner",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "ipfsCid",
+              "type": "string"
+            },
+            {
+              "internalType": "enum EHRmain.DataType",
+              "name": "dataType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "encryptedSymmetricKey",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isValid",
+              "type": "bool"
+            },
+            {
+              "internalType": "address",
+              "name": "provider",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct EHRmain.HealthRecord[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "_patientAddress",
           "type": "address"
         }
       ],
       "name": "emergencyAccess",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     }

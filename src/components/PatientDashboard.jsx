@@ -1,31 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoutButton from './LogoutButton';
 import { ToastContainer } from "react-toastify";
-import {
-  Box,
-  Card,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  Chip
-} from '@mui/material';
+import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import FileUploader from './FileUploader';
+import { ethers, BrowserProvider } from 'ethers';
+import contractABI from '../contractABI.json';
+import { format } from 'date-fns'; // Import date formatting utility
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+
+// Mapping of dataType enum to human-readable types
+const dataTypeMap = {
+  0: "EHR",          // Corresponds to EHR
+  1: "PHR",          // Corresponds to PHR
+  2: "Lab Results",  // Corresponds to LAB_RESULT
+  3: "Prescription",  // Corresponds to PRESCRIPTION
+  4: "Imaging",      // Corresponds to IMAGING
+};
 
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [healthRecords, setHealthRecords] = useState([
-    { dataHash: '0x123...', dataType: 'EHR', timestamp: '2024-03-13', provider: '0x456...', isValid: true },
-  ]);
+  const [healthRecords, setHealthRecords] = useState([]);
   const [permissionRequests, setPermissionRequests] = useState([
     {
       requestId: '0x789...',
@@ -37,8 +34,42 @@ const PatientDashboard = () => {
     },
   ]);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
-
   const navigate = useNavigate();
+
+  // Define fetchHealthRecords function
+  const fetchHealthRecords = async () => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userPublicKey = await signer.getAddress();
+  
+      // Interact with the smart contract to fetch records
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      
+      // Fetch records using the user's address
+      const records = await contract.getHealthRecordsByOwner(userPublicKey);
+  
+      // Update state with the fetched records directly from the blockchain
+      const fetchedRecords = records.map((record) => ({
+        ipfsCid: record.ipfsCid,
+        dataType: dataTypeMap[record.dataType], // Map dataType enum to readable type
+        provider: record.provider,
+        timestamp: Number(record.timestamp), // Convert BigInt to Number
+        isValid: record.isValid,
+      }));
+  
+      // Reverse the records array to show the latest first
+      setHealthRecords(fetchedRecords.reverse());
+    } catch (error) {
+      console.error("Error fetching health records:", error);
+      alert('Error fetching health records. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    // Fetch health records from the blockchain when the component mounts
+    fetchHealthRecords();
+  }, []); // Run once when the component mounts
 
   const handleChange = (event, newValue) => {
     setTabValue(newValue);
@@ -49,25 +80,19 @@ const PatientDashboard = () => {
   };
 
   const handleNewRecord = (newRecord) => {
-    setHealthRecords((prev) => [...prev, newRecord]);
-    handleUploadDialog(false);
+    // After uploading, refetch the health records
+    setHealthRecords((prev) => [newRecord, ...prev]); // Add new record at the top
+    handleUploadDialog(false); // Close the upload dialog
+
+    // Re-fetch the updated records from the blockchain
+    fetchHealthRecords();
   };
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: '100vw',
-        overflowX: 'auto',
-        p: 2,
-        backgroundColor: '#f4f6f9',
-      }}
-    >
+    <Box sx={{ width: '100%', maxWidth: '100vw', overflowX: 'auto', p: 2, backgroundColor: '#f4f6f9' }}>
       <Box sx={{ p: 6, maxWidth: '1200px', mx: 'auto', backgroundColor: '#f4f6f9', borderRadius: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" fontWeight="bold" color="primary">
-            Patient Dashboard
-          </Typography>
+          <Typography variant="h4" fontWeight="bold" color="primary">Patient Dashboard</Typography>
           <Box display="flex" alignItems="center" gap={2}>
             <div>
               <LogoutButton />
@@ -76,34 +101,16 @@ const PatientDashboard = () => {
           </Box>
         </Box>
 
-        <Tabs
-          value={tabValue}
-          onChange={handleChange}
-          centered
-          sx={{ my: 4, borderBottom: 2, borderColor: 'divider' }}
-        >
-          <Tab
-            label="Health Records"
-            sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }}
-          />
-          <Tab
-            label="Permission Requests"
-            sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }}
-          />
+        <Tabs value={tabValue} onChange={handleChange} centered sx={{ my: 4, borderBottom: 2, borderColor: 'divider' }}>
+          <Tab label="Health Records" sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }} />
+          <Tab label="Permission Requests" sx={{ fontWeight: 'bold', color: '#00796b', '&.Mui-selected': { color: '#004d40' } }} />
         </Tabs>
 
         {tabValue === 0 && (
           <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h5" fontWeight="bold" color="text.primary">
-                My Health Records
-              </Typography>
-              <Button
-                startIcon={<Add />}
-                variant="contained"
-                sx={{ backgroundColor: '#00796b' }}
-                onClick={() => handleUploadDialog(true)}
-              >
+              <Typography variant="h5" fontWeight="bold" color="text.primary">My Health Records</Typography>
+              <Button startIcon={<Add />} variant="contained" sx={{ backgroundColor: '#00796b' }} onClick={() => handleUploadDialog(true)}>
                 Add PHR Data
               </Button>
             </Box>
@@ -115,30 +122,30 @@ const PatientDashboard = () => {
                     <TableCell>Provider</TableCell>
                     <TableCell>Date</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>IPFS CID</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {healthRecords.map((record) => (
-                    <TableRow key={record.dataHash}>
+                  {healthRecords.map((record, index) => (
+                    <TableRow key={index}>
                       <TableCell>{record.dataType}</TableCell>
                       <TableCell>{record.provider}</TableCell>
-                      <TableCell>{record.timestamp}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={record.isValid ? "Valid" : "Invalid"}
-                          color={record.isValid ? "success" : "error"}
-                          size="small"
-                        />
+                        {record.timestamp
+                         ? format(new Date(record.timestamp * 1000), 'MM/dd/yyyy')
+                        : 'Invalid Date'}
+                      </TableCell>{/* Format date properly */}
+                      <TableCell>
+                        <Chip label={record.isValid ? "Valid" : "Invalid"} color={record.isValid ? "success" : "error"} size="small" />
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          sx={{ color: '#00796b', borderColor: '#00796b' }}
-                        >
-                          View
-                        </Button>
+                        <a href={`https://ipfs.io/ipfs/${record.ipfsCid}`} target="_blank" rel="noopener noreferrer">
+                          {record.ipfsCid}
+                        </a>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="outlined" size="small" sx={{ color: '#00796b', borderColor: '#00796b' }}>View</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -176,23 +183,11 @@ const PatientDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={request.status}
-                        color={request.status === 'PENDING' ? 'warning' : 'success'}
-                        size="small"
-                      />
+                      <Chip label={request.status} color={request.status === 'PENDING' ? 'warning' : 'success'} size="small" />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{ backgroundColor: '#00796b', mr: 1 }}
-                      >
-                        Approve
-                      </Button>
-                      <Button variant="outlined" size="small" color="error">
-                        Decline
-                      </Button>
+                      <Button variant="contained" size="small" sx={{ backgroundColor: '#00796b', mr: 1 }}>Approve</Button>
+                      <Button variant="outlined" size="small" color="error">Decline</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -201,16 +196,13 @@ const PatientDashboard = () => {
           </TableContainer>
         )}
 
-        <Dialog
-          open={openUploadDialog}
-          onClose={() => handleUploadDialog(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <FileUploader
-            onClose={() => handleUploadDialog(false)}
-            onUpload={handleNewRecord}
-          />
+        {/* Upload Dialog */}
+        <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
+        <FileUploader 
+    onClose={() => handleUploadDialog(false)} 
+    onUpload={handleNewRecord} 
+/>
+
         </Dialog>
       </Box>
     </Box>
