@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
-import contractABI from '../contractABI.json'; // Ensure ABI is correctly imported
+import { toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+import contractABI from '../contractABI.json';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
@@ -13,9 +15,7 @@ const Login = () => {
   const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // console.log(process.env.REACT_APP_CONTRACT_ADDRESS);
-
-  const connectWallet = async () => {
+  const connectWallet = async (showToast = false) => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -27,15 +27,21 @@ const Login = () => {
         return signer;
       } catch (error) {
         console.error('Failed to connect wallet:', error);
-        alert('Failed to connect wallet. Please try again.');
+        toast.error('Failed to connect wallet. Please try again.', {
+          position: "top-right",
+          autoClose: 1000,
+        });
       }
     } else {
-      alert('MetaMask is not installed.');
+      toast.error('MetaMask is not installed.', {
+        position: "top-right",
+        autoClose: 1000,
+      });
     }
   };
 
   useEffect(() => {
-    connectWallet(); // Automatically connect wallet on component mount
+    connectWallet(false); // Don't show toast on auto-connect
   }, []);
 
   useEffect(() => {
@@ -43,7 +49,10 @@ const Login = () => {
       if (accounts.length > 0) {
         window.location.reload(); // Reload the page when the account changes
       } else {
-        alert('Please connect to MetaMask.');
+        toast.warn('Please connect to MetaMask.', {
+          position: "top-right",
+          autoClose: 1000,
+        });
       }
     };
   
@@ -58,15 +67,19 @@ const Login = () => {
       }
     };
   }, []);
+
   const handleLogin = async () => {
     if (!walletAddress) {
-      alert('Please enter your wallet address');
+      toast.error('Please enter your wallet address', {
+        position: "top-right",
+        autoClose: 1000,
+      });
       return;
     }
 
     setLoading(true);
     try {
-      const signer = await connectWallet();
+      const signer = await connectWallet(true); // Show toast on manual connect
       if (!signer) return;
 
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
@@ -76,34 +89,70 @@ const Login = () => {
       const role = userRole.toString();
 
       if (role === '0') {
-        alert('User is not registered');
+        toast.error('User is not registered', {
+          position: "top-right",
+          autoClose: 1000,
+        });
         return;
       }
 
+      // Show loading toast
+      const loadingToast = toast.loading('Logging in...', {
+        position: "top-right",
+      });
+
       switch (role) {
         case '1':
-          alert('Logged in as Patient');
-          navigate('/dashboard/patient');
+          toast.update(loadingToast, {
+            render: 'Logged in as Patient',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/patient'), 2000);
           break;
         case '2':
-          alert('Logged in as Doctor');
-          navigate('/dashboard/doctor');
+          toast.update(loadingToast, {
+            render: 'Logged in as Doctor',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/doctor'), 2000);
           break;
         case '3':
-          alert('Logged in as Researcher');
-          navigate('/dashboard/researcher');
+          toast.update(loadingToast, {
+            render: 'Logged in as Researcher',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/researcher'), 2000);
           break;
         default:
           if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
-            alert('Logged in as Admin');
-            navigate('/admin');
+            toast.update(loadingToast, {
+              render: 'Logged in as Admin',
+              type: 'success',
+              isLoading: false,
+              autoClose: 1000,
+            });
+            setTimeout(() => navigate('/admin'), 2000);
           } else {
-            alert('Unknown role or insufficient permissions');
+            toast.update(loadingToast, {
+              render: 'Unknown role or insufficient permissions',
+              type: 'error',
+              isLoading: false,
+              autoClose: 1000,
+            });
           }
       }
     } catch (error) {
       console.error('Login failed:', error);
-      alert(`Login failed: ${error.message}`);
+      toast.error(`Login failed: ${error.message}`, {
+        position: "top-right",
+        autoClose: 1000,
+      });
     } finally {
       setLoading(false);
     }
@@ -111,10 +160,16 @@ const Login = () => {
 
   const handleAdminLogin = () => {
     if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
-      alert('Logged in as Admin');
-      navigate('/admin');
+      toast.success('Logged in as Admin', {
+        position: "top-right",
+        autoClose: 1000,
+      });
+      setTimeout(() => navigate('/admin'), 2000);
     } else {
-      alert('You are not authorized to log in as Admin');
+      toast.error('You are not authorized to log in as Admin', {
+        position: "top-right",
+        autoClose: 1000,
+      });
     }
   };
 
@@ -126,12 +181,16 @@ const Login = () => {
         <Input
           label="Wallet Address"
           value={walletAddress}
-          onChange={(e) => setWalletAddress(e.target.value)} // You can disable this if the field should be non-editable
+          onChange={(e) => setWalletAddress(e.target.value)}
           placeholder="Enter your wallet address"
-          readOnly // Add this to make the field non-editable
+          readOnly
         />
 
-        <Button label={loading ? 'Logging in...' : 'Login'} onClick={handleLogin} disabled={loading} />
+        <Button 
+          label={loading ? 'Logging in...' : 'Login'} 
+          onClick={handleLogin} 
+          disabled={loading}
+        />
 
         <div className="mt-4 text-center">
           <p>
@@ -149,7 +208,7 @@ const Login = () => {
           <p>
             <button
               className="text-red-500 underline"
-              onClick={() =>  handleAdminLogin('/admin-login')}
+              onClick={() => handleAdminLogin('/admin-login')}
             >
               Login as Administrator
             </button>
