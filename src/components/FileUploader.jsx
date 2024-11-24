@@ -1,19 +1,13 @@
-import {
-    Button,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    FormHelperText,
-    InputLabel,
-    MenuItem,
-    Select,
-    TextField
-} from '@mui/material';
+import {Button,DialogActions,DialogContent,DialogTitle,FormControl,FormHelperText,InputLabel,MenuItem,Select,TextField} from '@mui/material';
+import axios from 'axios';
 import CryptoJS from 'crypto-js';
-import { BrowserProvider } from 'ethers';
+import { ethers, BrowserProvider } from 'ethers';
 import { PinataSDK } from "pinata-web3";
 import React, { useState } from 'react';
+import contractABI from '../contractABI.json';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+
 
 const pinata = new PinataSDK({
     pinataJwt: process.env.REACT_APP_PINATA_JWT,
@@ -141,10 +135,12 @@ async function downloadFromIPFS(ipfsHash){
 const FileUploader = ({ onClose, onUpload }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [dataType, setDataType] = useState('');
+    const [dataType, setDataType] = useState('PHR');
     const [ipfsHash, setIpfsHash] = useState('');
-    const [symmetricKey, setSymmetricKey] = useState('');
-
+    // const [symmetricKey, setSymmetricKey] = useState('');
+    const pinataApiKey = process.env.REACT_APP_PINATA_API_KEY;
+    const pinataApiSecret = process.env.REACT_APP_PINATA_API_SECRET;
+    
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         setSelectedFile(file);
@@ -179,7 +175,7 @@ const FileUploader = ({ onClose, onUpload }) => {
         try {
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            // const userPublicKey = await signer.getAddress();
+            const userPublicKey = await signer.getAddress();
             // const generatedKey = CryptoJS.lib.WordArray.random(32).toString();
             // setSymmetricKey(generatedKey);
 
@@ -205,16 +201,53 @@ const FileUploader = ({ onClose, onUpload }) => {
             const uploadedData = await uploadToIPFS(selectedFile);
             setIpfsHash(uploadedData.cid);
 
-            // Call the download and decrypt function immediately after upload
-            await downloadAndDecrypt(uploadedData.cid);
+            // Prepare transaction data for signing
+            const transactionData = JSON.stringify({
+                publicKey: userPublicKey,
+                dataType: dataType,
+                ipfsHash
+            });
 
-            // onUpload({ ipfsHash: uploadedData.cid, dataType, owner: userPublicKey });
-            console.log('File uploaded successfully and downloaded.');
+            // Sign the transaction data with the user's Ethereum private key
+            const signature = await signer.signMessage(transactionData);
+
+            // Interact with blockchain and add the record
+            const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+            const dataTypeEnum = getDataTypeEnum(dataType);
+            // Call addPHRData function from the smart contract
+            const tx = await contract.addPHRData(ipfsHash, dataTypeEnum, {
+                gasLimit: 500000 // Adjust gas limit if necessary
+            });
+            await tx.wait();  // Wait for the transaction to be mined
+            // After successful blockchain interaction, call the onUpload callback
+            onUpload({ ipfsHash, dataType, owner: userPublicKey, signature });
+            
+            // Call the download and decrypt function immediately after upload
+            // await downloadAndDecrypt(uploadedData.cid);
+            
+            console.log('File uploaded successfully.');
         } catch (error) {
             console.error('Error uploading file:', error);
             alert('Error uploading file. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const getDataTypeEnum = (dataType) => {
+        switch (dataType) {
+            case 'EHR':
+                return 0;  // EHR corresponds to 0 in your contract
+            case 'PHR':
+                return 1;  // PHR corresponds to 1
+            case 'LAB_RESULT':
+                return 2;  // LAB_RESULT corresponds to 2
+            case 'PRESCRIPTION':
+                return 3;  // PRESCRIPTION corresponds to 3
+            case 'IMAGING':
+                return 4;  // IMAGING corresponds to 4
+            default:
+                return 1;  // Default to PHR
         }
     };
 

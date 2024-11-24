@@ -4,16 +4,16 @@ pragma solidity ^0.8.0;
 contract EHRmain {
     // User roles
     enum Role { NONE, PATIENT, PROVIDER, RESEARCHER }
-
+    
     // Data types
     enum DataType { EHR, PHR, LAB_RESULT, PRESCRIPTION, IMAGING }
-
+    
     // Permission types
     enum PermissionType { NONE, INCENTIVEBASED, NONINCENTIVEBASED }
-
+    
     // Status of permission requests
     enum RequestStatus { PENDING, APPROVED, REJECTED, EXPIRED }
-
+    
     // Structs for storing user data
     struct User {
         address userAddress;
@@ -51,10 +51,10 @@ contract EHRmain {
     mapping(string => HealthRecord) public healthRecords; // Changed data type from bytes32 to string
     mapping(string => PermissionRequest) public permissionRequests; // Changed data type from bytes32 to string
     mapping(address => mapping(string => mapping(address => bool))) public permissions;
-    
+
     // Mapping to store health record IPFS CIDs by owner address
     mapping(address => string[]) public ownerToHealthRecords;
-
+    
     // System variables
     address public systemOwner;
     uint256 public totalUsers;
@@ -146,7 +146,7 @@ contract EHRmain {
         });
 
         ownerToHealthRecords[_patientAddress].push(_ipfsCid);  // Store the CID for the owner
-
+        
         totalRecords++;
         emit HealthRecordAdded(_ipfsCid, _patientAddress, _dataType);
         return true;
@@ -169,7 +169,7 @@ contract EHRmain {
         });
 
         ownerToHealthRecords[msg.sender].push(_ipfsCid);  // Store the CID for the owner
-
+        
         totalRecords++;
         emit HealthRecordAdded(_ipfsCid, msg.sender, _dataType);
         return true;
@@ -226,7 +226,7 @@ contract EHRmain {
         require(_permissionType != PermissionType.NONE, "Invalid permission type");
         require(msg.value > 0, "Incentive amount required");
         require(keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) == keccak256(abi.encodePacked(_owner)), "Invalid record owner");
-
+        
         string memory requestId = string(abi.encodePacked(
             msg.sender,
             _owner,
@@ -283,14 +283,14 @@ contract EHRmain {
 {
     uint256 totalRecordsForOwner = ownerToHealthRecords[userAddress].length;
     HealthRecord[] memory records = new HealthRecord[](totalRecordsForOwner);
-
+    
     // Loop through each record of the owner and populate the HealthRecord array
     for (uint256 i = 0; i < totalRecordsForOwner; i++) {
         string memory ipfsCid = ownerToHealthRecords[userAddress][i];
         HealthRecord memory record = healthRecords[ipfsCid];
         records[i] = record;
     }
-
+    
     return records;
     }
 
@@ -299,7 +299,7 @@ contract EHRmain {
         external onlyProvider returns (bool) 
     {
         require(keccak256(abi.encodePacked(users[_patientAddress].role)) == keccak256(abi.encodePacked(Role.PATIENT)), "Patient not found");
-
+        
         emit EmergencyAccess(msg.sender, _patientAddress, block.timestamp);
         return true;
     }
