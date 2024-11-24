@@ -1,6 +1,4 @@
-/**
- * Encrypts a plaintext message using the RSA public key.
- * 
+/** 
  * @param {Array} publicKey - Array [e, n] where e is the public exponent and n is the modulus.
  * @param {string|number} plaintext - The message to encrypt (string or number).
  * @returns {BigInt} - The encrypted ciphertext.
@@ -19,7 +17,6 @@ function rsaEncrypt(publicKey, plaintext) {
 }
 
 /**
- * Decrypts a ciphertext message using the RSA private key.
  * 
  * @param {Array} privateKey - Array [d, n] where d is the private exponent and n is the modulus.
  * @param {BigInt} ciphertext - The encrypted message (BigInt).
