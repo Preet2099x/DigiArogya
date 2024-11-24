@@ -253,20 +253,28 @@ contract EHRmain {
     }
 
     function approvePermission(
-        string memory _requestId
-    ) external returns (bool) {
-        PermissionRequest storage request = permissionRequests[_requestId];
-        require(request.owner == msg.sender, "Only owner can approve");
-        require(request.status == RequestStatus.PENDING, "Invalid request status");
-        require(block.timestamp <= request.expiryDate, "Request expired");
+    string memory _requestId,
+    bytes memory _encryptedSymmetricKey // Added encrypted symmetric key as parameter
+) external returns (bool) {
+    PermissionRequest storage request = permissionRequests[_requestId];
+    require(request.owner == msg.sender, "Only owner can approve");
+    require(request.status == RequestStatus.PENDING, "Invalid request status");
+    require(block.timestamp <= request.expiryDate, "Request expired");
 
-        request.status = RequestStatus.APPROVED;
+   
+    request.status = RequestStatus.APPROVED;
 
-        permissions[request.owner][_requestId][request.requester] = true;
+    // Update permissions mapping to grant access
+    permissions[request.owner][request.ipfsCid][request.requester] = true;
 
-        emit PermissionGranted(_requestId, request.requester, request.owner);
-        return true;
-    }
+    // Update the encrypted symmetric key in the corresponding health record
+    HealthRecord storage record = healthRecords[request.ipfsCid];
+    record.encryptedSymmetricKey = _encryptedSymmetricKey;
+
+    emit PermissionGranted(_requestId, request.requester, request.owner);
+    return true;
+}
+
 
     function revokePermission(
         string memory _ipfsCid,

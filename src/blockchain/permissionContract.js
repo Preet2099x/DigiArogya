@@ -72,20 +72,7 @@ export async function requestIncentivePermission(ownerAddress, dataHash, incenti
 /**
  * Approve Permission
  * @param {string} requestId - The unique ID of the permission request to approve.
- */
-export async function approvePermission(requestId) {
-  try {
-    const tx = await permissionContract.approvePermission(requestId);
-    console.log("Transaction sent:", tx.hash);
 
-    const receipt = await tx.wait();
-    console.log("Permission approved:", receipt);
-    return receipt;
-  } catch (error) {
-    console.error("Error approving permission:", error);
-    throw error;
-  }
-}
 
 /**
  * Revoke Permission
@@ -160,3 +147,60 @@ export async function isPermissionExpired(requestId) {
 //     console.error("Error in permission operations:", error);
 //   }
 // })();
+
+
+/**
+ * Grant Permission to a Request
+ * @param {string} requestId - The unique ID of the permission request to approve.
+ * @param {string} symmetricKey - The symmetric key (unencrypted).
+ * @param {string} requesterPublicKey - The public key of the requester for encryption.
+ */
+export async function grantPermission(requestId, symmetricKey, requesterPublicKey) {
+  try {
+    // Encrypt the symmetric key with the requester's public key
+    const encryptedSymmetricKey = encryptSymmetricKey(symmetricKey, requesterPublicKey);
+    if (!encryptedSymmetricKey) throw new Error("Failed to encrypt symmetric key.");
+
+    // Call the smart contract's approvePermission function with the encrypted key
+    const tx = await permissionContract.approvePermission(requestId, encryptedSymmetricKey);
+    console.log("Transaction sent:", tx.hash);
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+    console.log("Permission granted successfully:", receipt);
+    return receipt;
+  } catch (error) {
+    console.error("Error granting permission:", error);
+    throw error;
+  }
+}
+
+/**
+ * Encrypt the Symmetric Key using the Requester's Public Key
+ * @param {string} symmetricKey - The plain symmetric key to encrypt.
+ * @param {string} requesterPublicKey - The public key of the requester.
+ * @returns {string} - The encrypted symmetric key.
+ */
+function encryptSymmetricKey(symmetricKey, requesterPublicKey) {
+  try {
+    // Use an encryption library like 'crypto' or 'ethers' utils
+    const publicKeyBuffer = Buffer.from(requesterPublicKey, "hex");
+    const symmetricKeyBuffer = Buffer.from(symmetricKey, "utf-8");
+
+    // Example encryption logic (replace with actual library implementation)
+    const crypto = require("crypto");
+    const encryptedKey = crypto.publicEncrypt(
+      {
+        key: publicKeyBuffer,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: "sha256",
+      },
+      symmetricKeyBuffer
+    );
+
+    return encryptedKey.toString("hex"); // Return the encrypted key as a hex string
+  } catch (error) {
+    console.error("Error encrypting symmetric key:", error);
+    return null;
+  }
+}
