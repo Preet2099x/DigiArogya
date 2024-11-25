@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import LogoutButton from './LogoutButton';
 import { ToastContainer } from "react-toastify";
 import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
-import { Add } from '@mui/icons-material';
-import FileUploader from './FileUploader';
+import { Add, FileDownload } from '@mui/icons-material';
+import FileUploader2 from './FileUploader2';
 import { ethers, BrowserProvider } from 'ethers';
 import contractABI from '../contractABI.json';
 import { format } from 'date-fns'; // Import date formatting utility
+import FileDownloader from './FileDownloader';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -197,11 +198,12 @@ const PatientDashboard = () => {
         )}
 
         <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
-          <FileUploader
+          <FileUploader2
             onClose={() => handleUploadDialog(false)}
             onUpload={handleNewRecord}
           />
         </Dialog>
+        <FileDownloader />
       </Box>
     </Box>
   );
