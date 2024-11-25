@@ -205,7 +205,7 @@ const FileUploader = ({ onClose, onUpload }) => {
             const transactionData = JSON.stringify({
                 publicKey: userPublicKey,
                 dataType: dataType,
-                ipfsHash
+                ipfsHash: uploadedData.cid
             });
 
             // Sign the transaction data with the user's Ethereum private key
@@ -215,12 +215,12 @@ const FileUploader = ({ onClose, onUpload }) => {
             const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
             const dataTypeEnum = getDataTypeEnum(dataType);
             // Call addPHRData function from the smart contract
-            const tx = await contract.addPHRData(ipfsHash, dataTypeEnum, {
+            const tx = await contract.addPHRData(uploadedData.cid, dataTypeEnum, {
                 gasLimit: 500000 // Adjust gas limit if necessary
             });
             await tx.wait();  // Wait for the transaction to be mined
             // After successful blockchain interaction, call the onUpload callback
-            onUpload({ ipfsHash, dataType, owner: userPublicKey, signature });
+            onUpload({ ipfsHash: uploadedData.cid, dataType, owner: userPublicKey, signature });
             
             // Call the download and decrypt function immediately after upload
             // await downloadAndDecrypt(uploadedData.cid);

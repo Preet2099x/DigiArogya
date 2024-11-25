@@ -1,21 +1,17 @@
-import { ethers } from "ethers";
-import permissionContractABI from "./contractABI.json"; // Import ABI from the JSON file
+import {ethers,BrowserProvider} from "ethers";
+import contractABI from "../contractABI.json"; // Import ABI from the JSON file
 
 // Address of the deployed Permission contract
-const permissionContractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 // Create a provider (e.g., for MetaMask)
-const provider = new ethers.providers.Web3Provider(window.ethereum);
+const provider = new BrowserProvider(window.ethereum);
 
 // Get the signer (current connected account in MetaMask)
 const signer = provider.getSigner();
 
 // Initialize the contract instance
-const permissionContract = new ethers.Contract(
-  permissionContractAddress,
-  permissionContractABI,
-  signer
-);
+const permissionContract = new ethers.Contract(contractAddress, contractABI.abi, signer)
 
 /**
  * Request Non-Incentive-Based Permission
@@ -55,7 +51,7 @@ export async function requestIncentivePermission(ownerAddress, dataHash, incenti
       dataHash,
       permissionType,
       {
-        value: ethers.utils.parseEther(incentiveAmount), // Convert ETH to Wei
+        value: ethers.parseEther(incentiveAmount), // Convert ETH to Wei
       }
     );
     console.log("Transaction sent:", tx.hash);
@@ -113,41 +109,6 @@ export async function isPermissionExpired(requestId) {
     throw error;
   }
 }
-
-// Example Usage
-// (async () => {
-//   try {
-//     // Example data
-//     const ownerAddress = "0xOwnerAddressHere";
-//     const dataHash = ethers.utils.id("Sample Health Record");
-//     const requestId = "0xRequestIdHere"; // Replace with actual request ID
-//     const userAddress = "0xUserAddressHere"; // Address whose permission might be revoked
-//     const incentiveAmount = "0.1"; // Incentive in ETH
-
-//     // Request non-incentive permission
-//     const nonIncentiveReceipt = await requestNonIncentivePermission(ownerAddress, dataHash);
-//     console.log("Non-Incentive-Based Permission Receipt:", nonIncentiveReceipt);
-
-//     // Request incentive-based permission
-//     const incentiveReceipt = await requestIncentivePermission(ownerAddress, dataHash, incentiveAmount);
-//     console.log("Incentive-Based Permission Receipt:", incentiveReceipt);
-
-//     // Approve permission
-//     const approveReceipt = await approvePermission(requestId);
-//     console.log("Permission Approved Receipt:", approveReceipt);
-
-//     // Check if the permission is expired
-//     const isExpired = await isPermissionExpired(requestId);
-//     console.log("Permission Expired:", isExpired);
-
-//     // Revoke permission
-//     const revokeReceipt = await revokePermission(dataHash, userAddress);
-//     console.log("Permission Revoked Receipt:", revokeReceipt);
-//   } catch (error) {
-//     console.error("Error in permission operations:", error);
-//   }
-// })();
-
 
 /**
  * Grant Permission to a Request
