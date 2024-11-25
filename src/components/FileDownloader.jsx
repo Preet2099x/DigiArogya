@@ -10,9 +10,8 @@ import { downloadFromIPFS } from '../services/ipfsDownloader';
 
 window.Buffer = window.Buffer || Buffer;
 
-const FileDownloader = () => {
-    const [ipfsHash, setIpfsHash] = useState('QmVLFRg7STjTSZm9PRaoZTrR5tzTnmkoXbq9t2LaNKuipG');
-    const [decryptionKey, setDecryptionKey] = useState('0f9a8980a3942b5247ea9628daf77b26bd7d809920aa02a6eaa494c66fd9e1');
+const FileDownloader = ({ ipfsHash }) => {
+    const [decryptionKey, setDecryptionKey] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -66,7 +65,6 @@ const FileDownloader = () => {
                         fullWidth
                         label="IPFS Hash"
                         value={ipfsHash}
-                        onChange={(e) => setIpfsHash(e.target.value)}
                         placeholder="Enter IPFS hash"
                         variant="outlined"
                     />
