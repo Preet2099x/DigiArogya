@@ -34,6 +34,7 @@ import {
   Upload,
   X 
 } from 'lucide-react';
+import FileUploader from './FileUploader';
 
 const DoctorDashboard = () => {
   const [patients, setPatients] = useState([
@@ -167,45 +168,6 @@ const DoctorDashboard = () => {
           </div>
         </Box>
 
-        {/* <Grid container spacing={4}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
-              <CardHeader
-                avatar={<Users size={20} />}
-                title="Total Patients"
-                titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
-              />
-              <CardContent>
-                <Typography variant="h5" fontWeight="bold" color="primary">{patients.length}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
-              <CardHeader
-                avatar={<FileText size={20} />}
-                title="Records Access"
-                titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
-              />
-              <CardContent>
-                <Typography variant="h5" fontWeight="bold" color="primary">{accessibleRecords.length}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ backgroundColor: '#ffffff', boxShadow: 3, borderRadius: 2 }}>
-              <CardHeader
-                avatar={<Clock size={20} />}
-                title="Pending Requests"
-                titleTypographyProps={{ variant: 'h5', fontWeight: 'bold', color: 'primary' }}
-              />
-              <CardContent>
-                <Typography variant="h5" fontWeight="bold" color="primary">2</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid> */}
-
         <Box mt={4}>
           <Tabs
             value={tabValue}
@@ -317,7 +279,7 @@ const DoctorDashboard = () => {
           </Card>
         )}
 
-        {tabValue === 2 && (
+        {/* {tabValue === 2 && (
           <Card sx={{ marginTop: 4 }}>
             <CardContent>
               <Typography variant="h6" color="textSecondary">Upload Patient Records</Typography>
@@ -395,6 +357,10 @@ const DoctorDashboard = () => {
               </Box>
             </CardContent>
           </Card>
+        )} */}
+
+        { tabValue==2 && (
+          <FileUploader userRole={"Provider"}/>
         )}
 
         <Dialog open={openNewPatientDialog} onClose={handleCloseDialog}>

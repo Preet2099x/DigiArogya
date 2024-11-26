@@ -199,46 +199,9 @@ const PatientDashboard = () => {
     </Box>
   );
 
-  const fetchPermissionRequests = async () => {
-    try {
-      // Ensure the user is connected to a wallet
-      if (!window.ethereum) {
-        alert("Please install MetaMask!");
-        return;
-      }
+  
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
-      // Connect to the smart contract
-      const contract = new ethers.Contract(
-        permissionContract.address,
-        permissionContract.abi,
-        signer
-      );
-
-      // Fetch permission requests for the current patient
-      const patientAddress = await signer.getAddress();
-      const requests = await contract.getPermissionRequests(patientAddress);
-
-      // Process and set permission requests
-      const processedRequests = requests.map((request) => ({
-        requester: request.requester,
-        dataHash: request.dataHash,
-        requestType: request.requestType, // Non-Incentive-Based or Incentive-Based
-        timestamp: new Date(request.timestamp.toNumber() * 1000), // Convert to JS Date
-        isApproved: request.isApproved,
-      }));
-
-      setPermissionRequests(processedRequests);
-    } catch (error) {
-      console.error("Error fetching permission requests:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPermissionRequests();
-  }, []);
+  
 
   return (
     <div>
