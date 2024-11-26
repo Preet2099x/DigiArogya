@@ -4,7 +4,7 @@ import LogoutButton from './LogoutButton';
 import { ToastContainer } from "react-toastify";
 import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
 import { Add, FileDownload } from '@mui/icons-material';
-import FileUploader2 from './FileUploader';
+import FileUploader from './FileUploader';
 import { ethers, BrowserProvider } from 'ethers';
 import contractABI from '../contractABI.json';
 import { format } from 'date-fns'; // Import date formatting utility
@@ -251,7 +251,7 @@ const PatientDashboard = () => {
         )}
 
         <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
-          <FileUploader2
+          <FileUploader
             onClose={() => handleUploadDialog(false)}
             onUpload={handleNewRecord}
             userRole={"Patient"}
