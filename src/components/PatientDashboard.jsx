@@ -4,7 +4,7 @@ import LogoutButton from './LogoutButton';
 import { ToastContainer } from "react-toastify";
 import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
 import { Add, FileDownload } from '@mui/icons-material';
-import FileUploader2 from './FileUploader2';
+import FileUploader2 from './FileUploader';
 import { ethers, BrowserProvider } from 'ethers';
 import contractABI from '../contractABI.json';
 import { format } from 'date-fns'; // Import date formatting utility
@@ -26,7 +26,16 @@ const dataTypeMap = {
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
   const [healthRecords, setHealthRecords] = useState([]);
-  const [permissionRequests, setPermissionRequests] = useState('');
+  const [permissionRequests, setPermissionRequests] = useState([
+    {
+      requestId: '0x789...',
+      requester: '0xabc...',
+      requestDate: '2024-03-12',
+      status: 'PENDING',
+      isIncentiveBased: true,
+      incentiveAmount: '0.1 ETH',
+    },
+  ]);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const navigate = useNavigate();
 
@@ -59,6 +68,46 @@ const PatientDashboard = () => {
       alert('Error fetching health records. Please try again.');
     }
   };
+  // const fetchPermissionRequests = async () => {
+  //   try {
+  //     // Ensure the user is connected to a wallet
+  //     if (!window.ethereum) {
+  //       alert("Please install MetaMask!");
+  //       return;
+  //     }
+
+  //     const provider = new ethers.providers.Web3Provider(window.ethereum);
+  //     const signer = provider.getSigner();
+
+  //     // Connect to the smart contract
+  //     const contract = new ethers.Contract(
+  //       permissionContract.address,
+  //       permissionContract.abi,
+  //       signer
+  //     );
+
+  //     // Fetch permission requests for the current patient
+  //     const patientAddress = await signer.getAddress();
+  //     const requests = await contract.getPermissionRequests(patientAddress);
+
+  //     // Process and set permission requests
+  //     const processedRequests = requests.map((request) => ({
+  //       requester: request.requester,
+  //       dataHash: request.dataHash,
+  //       requestType: request.requestType, // Non-Incentive-Based or Incentive-Based
+  //       timestamp: new Date(request.timestamp.toNumber() * 1000), // Convert to JS Date
+  //       isApproved: request.isApproved,
+  //     }));
+
+  //     setPermissionRequests(processedRequests);
+  //   } catch (error) {
+  //     console.error("Error fetching permission requests:", error);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchPermissionRequests();
+  // }, []);
 
   useEffect(() => {
     // Fetch health records from the blockchain when the component mounts
@@ -162,7 +211,7 @@ const PatientDashboard = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {permissionRequests.map((request) => (
+                (permissionRequests ? {permissionRequests.map((request) => (
                   <TableRow key={request.requestId}>
                     <TableCell>{request.requester}</TableCell>
                     <TableCell>{request.requestDate}</TableCell>
@@ -184,7 +233,7 @@ const PatientDashboard = () => {
                       <Button variant="outlined" size="small" color="error">Decline</Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))})
               </TableBody>
             </Table>
           </TableContainer>

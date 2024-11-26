@@ -1,3 +1,4 @@
+import CryptoJS from "crypto-js";
 import {ethers,BrowserProvider} from "ethers";
 import contractABI from "../contractABI.json"; // Import ABI from the JSON file
 
@@ -144,16 +145,15 @@ export async function grantPermission(requestId, symmetricKey, requesterPublicKe
  */
 function encryptSymmetricKey(symmetricKey, requesterPublicKey) {
   try {
-    // Use an encryption library like 'crypto' or 'ethers' utils
+    // Use an encryption library like 'CryptoJS' or 'ethers' utils
     const publicKeyBuffer = Buffer.from(requesterPublicKey, "hex");
     const symmetricKeyBuffer = Buffer.from(symmetricKey, "utf-8");
 
     // Example encryption logic (replace with actual library implementation)
-    const crypto = require("crypto");
-    const encryptedKey = crypto.publicEncrypt(
+    const encryptedKey = CryptoJS.publicEncrypt(
       {
         key: publicKeyBuffer,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        padding: CryptoJS.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: "sha256",
       },
       symmetricKeyBuffer

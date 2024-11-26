@@ -1,145 +1,18 @@
 import {Button,DialogActions,DialogContent,DialogTitle,FormControl,FormHelperText,InputLabel,MenuItem,Select,TextField} from '@mui/material';
-import axios from 'axios';
 import CryptoJS from 'crypto-js';
 import { ethers, BrowserProvider } from 'ethers';
-import { PinataSDK } from "pinata-web3";
 import React, { useState } from 'react';
 import contractABI from '../contractABI.json';
+import encryptFileToBase64 from '../services/fileEncrypter';
+import { uploadToIPFS } from '../services/ipfsUploader';
+
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
-
-
-const pinata = new PinataSDK({
-    pinataJwt: process.env.REACT_APP_PINATA_JWT,
-    pinataGateway: process.env.REACT_APP_PINATA_GATEWAY,
-});
-
-// async function encryptFile(file, secretKey) {
-//     const reader = new FileReader();
-//     return new Promise((resolve, reject) => {
-//         reader.onload = () => {
-//             try {
-//                 const wordArray = CryptoJS.lib.WordArray.create(reader.result);
-//                 const iv = CryptoJS.lib.WordArray.random(16);
-//                 const encrypted = CryptoJS.AES.encrypt(wordArray, secretKey, {
-//                     iv: iv,
-//                     mode: CryptoJS.mode.CBC,
-//                     padding: CryptoJS.pad.Pkcs7
-//                 });
-//                 const combinedData = iv.concat(encrypted.ciphertext).toString(CryptoJS.enc.Base64);
-//                 const blob = new Blob([combinedData], { type: 'application/octet-stream' });
-//                 const encryptedFile = new File([blob], `${file.name}.encrypted`, {
-//                     type: 'application/octet-stream'
-//                 });
-//                 encryptedFile.originalType = file.type;
-//                 encryptedFile.originalName = file.name;
-//                 resolve(encryptedFile);
-//             } catch (error) {
-//                 reject(error);
-//             }
-//         };
-//         reader.onerror = () => reject(new DOMException("Problem parsing input file."));
-//         reader.readAsArrayBuffer(file);
-//     });
-// }
-
-// async function decryptFile(encryptedFile, secretKey) {
-//     const reader = new FileReader();
-//     return new Promise((resolve, reject) => {
-//         reader.onload = () => {
-//             try {
-//                 const encryptedData = reader.result;
-//                 const encryptedWordArray = CryptoJS.enc.Base64.parse(encryptedData);
-//                 const iv = CryptoJS.lib.WordArray.create(
-//                     encryptedWordArray.words.slice(0, 4),
-//                     16
-//                 );
-//                 const ciphertext = CryptoJS.lib.WordArray.create(
-//                     encryptedWordArray.words.slice(4)
-//                 );
-//                 const decrypted = CryptoJS.AES.decrypt(
-//                     { ciphertext: ciphertext },
-//                     secretKey,
-//                     { iv: iv }
-//                 );
-//                 const typedArray = new Uint8Array(decrypted.sigBytes);
-//                 for (let i = 0; i < decrypted.sigBytes; i++) {
-//                     typedArray[i] = (decrypted.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-//                 }
-//                 const originalName = encryptedFile.originalName || encryptedFile.name.replace('.encrypted', '');
-//                 const originalType = encryptedFile.originalType || 'application/octet-stream';
-//                 const blob = new Blob([typedArray], { type: originalType });
-//                 const decryptedFile = new File([blob], originalName, { type: originalType });
-//                 resolve(decryptedFile);
-//             } catch (error) {
-//                 reject(error);
-//             }
-//         };
-//         reader.onerror = () => reject(new DOMException("Problem parsing input file."));
-//         reader.readAsText(encryptedFile);
-//     });
-// }
-
-async function uploadToIPFS(file) {
-    const upload = await pinata.upload.file(file);
-    return { cid: upload.IpfsHash, originalName: file.name, originalType: file.type };
-}
-
-async function downloadFromIPFS(ipfsHash){
-    try {
-        const res=await pinata.gateways.get(ipfsHash);
-        console.log(res);
-        const downloadedBlob = new Blob([res.data], { type: res.contentType });
-        const downloadedFile = new File([downloadedBlob], "download_file", { type: res.contentType });
-        return downloadedFile;
-    }
-    catch(err){
-        console.log(err);
-    }
-}
-// async function downloadFromIPFS(ipfsHash, secretKey) {
-//     try {
-//         // Fetch file from IPFS
-//         const response = await pinata.gateways.get(ipfsHash);
-
-//         // Check if response.data is an object or a JSON string
-//         const fileData = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-
-//         // Extract Base64-encoded content
-//         const base64Content = fileData.content;
-
-//         // Decode Base64 string to binary data
-//         const byteString = atob(base64Content.split(',')[1]); // Ignore the `data:application/octet-stream;base64,` prefix
-//         const ab = new ArrayBuffer(byteString.length);
-//         const ia = new Uint8Array(ab);
-//         for (let i = 0; i < byteString.length; i++) {
-//             ia[i] = byteString.charCodeAt(i);
-//         }
-
-//         // Create a Blob for the encrypted file
-//         const encryptedBlob = new Blob([ab], { type: 'application/octet-stream' });
-//         const encryptedFile = new File([encryptedBlob], "encrypted", { type: 'application/octet-stream' });
-
-//         // Decrypt the file using the symmetric key
-//         return await decryptFile(encryptedFile, secretKey);
-        
-//     } catch (error) {
-//         console.error("Error in downloadFromIPFS:", error);
-//         throw new Error("Failed to download or decrypt the file.");
-//     }
-// }
-
-
-
 
 const FileUploader = ({ onClose, onUpload }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [dataType, setDataType] = useState('PHR');
-    const [ipfsHash, setIpfsHash] = useState('');
-    // const [symmetricKey, setSymmetricKey] = useState('');
-    const pinataApiKey = process.env.REACT_APP_PINATA_API_KEY;
-    const pinataApiSecret = process.env.REACT_APP_PINATA_API_SECRET;
     
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -147,23 +20,6 @@ const FileUploader = ({ onClose, onUpload }) => {
     };
 
     const handleDataTypeChange = (event) => setDataType(event.target.value);
-
-    const downloadAndDecrypt = async (cid) => {
-        try {
-            const downloadFile = await downloadFromIPFS(cid);
-            const url = URL.createObjectURL(downloadFile);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = downloadFile.name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Error downloading or decrypting file:', error);
-            alert('Failed to download or decrypt the file.');
-        }
-    };
 
     const handleFileUpload = async () => {
         if (!selectedFile) {
@@ -223,7 +79,6 @@ const FileUploader = ({ onClose, onUpload }) => {
             onUpload({ ipfsHash: uploadedData.cid, dataType, owner: userPublicKey, signature });
             
             // Call the download and decrypt function immediately after upload
-            // await downloadAndDecrypt(uploadedData.cid);
             
             console.log('File uploaded successfully.');
         } catch (error) {
