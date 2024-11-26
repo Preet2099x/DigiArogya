@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { getDataTypeEnum } from "../services/getDataType";
+import { getDataTypeEnum } from "../../utils/getDataType";
 
 export async function addElectronicHealthRecord(userPublicKey, ownerAddress, dataType, uploadedData,  encryptedSymmetricKey,signer, contractAddress, contractABI, onUpload) {
     const transactionData = JSON.stringify({

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { getDataTypeEnum } from "../services/getDataType";
+import { getDataTypeEnum } from "../../utils/getDataType";
 
 export async function addPatientRecord(userPublicKey, dataType, uploadedData, signer, contractAddress, contractABI, onUpload) {
     const transactionData = JSON.stringify({
@@ -18,5 +18,3 @@ export async function addPatientRecord(userPublicKey, dataType, uploadedData, si
     onUpload({ ...uploadedData, dataType, publicKey: userPublicKey, signature });
     return { success: true, hash: tx.hash };
 }
-
-export default addPatientRecord;

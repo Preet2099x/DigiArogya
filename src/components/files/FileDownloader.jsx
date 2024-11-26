@@ -5,8 +5,8 @@ import { Download, Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Buffer } from 'buffer';
-import decryptBase64ToFile from '../services/fileDecrypter';
-import { downloadFromIPFS } from '../services/ipfsDownloader';
+import decryptBase64ToFile from '../../services/cryptography/fileDecrypter';
+import { downloadFromIPFS } from '../../services/ipfs/ipfsDownloader';
 
 window.Buffer = window.Buffer || Buffer;
 

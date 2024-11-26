@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LogoutButton from './LogoutButton';
+import LogoutButton from '../ui/LogoutButton';
 import { ToastContainer } from "react-toastify";
 import {
   AppBar,

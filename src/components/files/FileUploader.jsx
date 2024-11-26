@@ -2,11 +2,11 @@ import { Button,CircularProgress,DialogActions,DialogContent,DialogTitle,FormCon
 import CryptoJS from 'crypto-js';
 import { BrowserProvider } from 'ethers';
 import React, { useState } from 'react';
-import contractABI from '../contractABI.json';
-import encryptFileToBase64 from '../services/fileEncrypter';
-import { addPatientRecord } from '../transactions/patientRecordAdd';
-import { uploadToIPFS } from '../services/ipfsUploader';
-import { addElectronicHealthRecord } from '../transactions/electronicHealthRecordAdd';
+import contractABI from '../../contractABI.json';
+import encryptFileToBase64 from '../../services/cryptography/fileEncrypter';
+import { addPatientRecord } from '../../services/transactions/patientRecordAdd';
+import { uploadToIPFS } from '../../services/ipfs/ipfsUploader';
+import { addElectronicHealthRecord } from '../../services/transactions/electronicHealthRecordAdd';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 const FileUploader = ({ onClose, onUpload, userRole }) => {

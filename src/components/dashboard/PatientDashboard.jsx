@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LogoutButton from './LogoutButton';
+import LogoutButton from '../ui/LogoutButton';
 import { ToastContainer } from "react-toastify";
 import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
 import { Add, FileDownload } from '@mui/icons-material';
-import FileUploader from './FileUploader';
+import FileUploader from '../files/FileUploader';
 import { ethers, BrowserProvider } from 'ethers';
-import contractABI from '../contractABI.json';
+import contractABI from '../../contractABI.json';
 import { format } from 'date-fns'; // Import date formatting utility
-import FileDownloader from './FileDownloader';
-import permissionContract from './permissionContract'
+import FileDownloader from '../files/FileDownloader';
+import permissionContract from '../../services/blockchain/permissionContract'
 
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;

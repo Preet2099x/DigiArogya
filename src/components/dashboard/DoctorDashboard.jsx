@@ -1,40 +1,26 @@
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Snackbar,
+  Tab,
+  Tabs,
+  TextField,
+  Typography
+} from '@mui/material';
+import {
+  Plus
+} from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LogoutButton from './LogoutButton';
-import { ToastContainer } from "react-toastify";
-import { 
-  Card, 
-  CardHeader, 
-  CardContent, 
-  Typography, 
-  Button, 
-  Tabs, 
-  Tab, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  InputLabel, 
-  FormControl, 
-  Box, 
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Snackbar,
-  Alert
-} from '@mui/material';
-import { 
-  Shield, 
-  FileText, 
-  Users, 
-  Clock,
-  Plus,
-  Search,
-  Upload,
-  X 
-} from 'lucide-react';
-import FileUploader from './FileUploader';
+import FileUploader from '../files/FileUploader';
+import LogoutButton from '../ui/LogoutButton';
 
 const DoctorDashboard = () => {
   const [patients, setPatients] = useState([

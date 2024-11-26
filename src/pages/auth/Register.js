@@ -4,7 +4,7 @@ import { keccak256, toUtf8Bytes, isAddress } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
-import contractABI from '../contractABI.json';
+import contractABI from '../../contractABI.json';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 

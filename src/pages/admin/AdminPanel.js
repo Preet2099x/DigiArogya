@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Button from '../components/Button';
-import Input from '../components/Input';
-import LogoutButton from '../components/LogoutButton';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import LogoutButton from '../../components/ui/LogoutButton';
 import { ToastContainer } from "react-toastify";
 
 const AdminPanel = () => {

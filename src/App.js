@@ -2,21 +2,21 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify'; // Import ToastContainer
 import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
-import Login from './pages/Login';
-import Register from './pages/Register';
-import AdminLogin from './pages/AdminLogin';
-import AdminPanel from './pages/AdminPanel';
-import PatientDashboard from './components/PatientDashboard';
-import DoctorDashboard from './components/DoctorDashboard';
-import ResearcherDashboard from './components/ResearcherDashboard';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import AdminPanel from './pages/admin/AdminPanel';
+import DoctorDashboard from './components/dashboard/DoctorDashboard';
+import ResearcherDashboard from './components/dashboard/ResearcherDashboard';
+import PatientDashboard from './components/dashboard/PatientDashboard';
+import AdminLogin from "./pages/auth/AdminLogin"
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/dashboard/patient" element={<PatientDashboard />} />
         <Route path="/dashboard/doctor" element={<DoctorDashboard />} />

@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
-import contractABI from '../contractABI.json';
-import Input from '../components/Input';
-import Button from '../components/Button';
+import contractABI from '../../contractABI.json';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 const adminAddress = process.env.REACT_APP_ADMIN_ADDRESS;
