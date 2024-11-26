@@ -254,6 +254,7 @@ const PatientDashboard = () => {
           <FileUploader2
             onClose={() => handleUploadDialog(false)}
             onUpload={handleNewRecord}
+            userRole={"Patient"}
           />
         </Dialog>
         <Dialog open={openDownloadDialog} onClose={() => handleDownloadDialog(false)}>
