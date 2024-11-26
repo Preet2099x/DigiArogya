@@ -1,5 +1,6 @@
 import CryptoJS from "crypto-js";
 import {ethers,BrowserProvider} from "ethers";
+import { ethers, BrowserProvider } from "ethers";
 import contractABI from "../contractABI.json"; // Import ABI from the JSON file
 
 // Address of the deployed Permission contract

@@ -37,6 +37,8 @@ const PatientDashboard = () => {
     },
   ]);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
+  const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
+  const [hashForDownload, setHashForDownload] = useState('');
   const navigate = useNavigate();
 
   // Define fetchHealthRecords function
@@ -122,6 +124,10 @@ const PatientDashboard = () => {
     setOpenUploadDialog(open);
   };
 
+  const handleDownloadDialog = (open) => {
+    setOpenDownloadDialog(open);
+  };
+
   const handleNewRecord = (newRecord) => {
     // After uploading, refetch the health records
     setHealthRecords((prev) => [newRecord, ...prev]); // Add new record at the top
@@ -188,7 +194,12 @@ const PatientDashboard = () => {
                         </a>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outlined" size="small" sx={{ color: '#00796b', borderColor: '#00796b' }}>View</Button>
+                        <Button variant="outlined" size="small" sx={{ color: '#00796b', borderColor: '#00796b' }}
+                          onClick={() => {
+                            handleDownloadDialog(true);
+                            setHashForDownload(record.ipfsCid);
+                          }}>
+                          View</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -245,9 +256,14 @@ const PatientDashboard = () => {
             onUpload={handleNewRecord}
           />
         </Dialog>
-        <FileDownloader />
+        <Dialog open={openDownloadDialog} onClose={() => handleDownloadDialog(false)}>
+          <FileDownloader
+            onClose={() => handleDownloadDialog(false)}
+            ipfsHash={hashForDownload}
+          />
+        </Dialog>
       </Box>
-    </Box>
+    </Box >
   );
 };
 

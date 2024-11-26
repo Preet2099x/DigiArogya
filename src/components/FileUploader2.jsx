@@ -4,6 +4,11 @@ import { BrowserProvider } from 'ethers';
 import React, { useState } from 'react';
 import encryptFileToBase64 from '../services/fileEncrypter';
 import { uploadToIPFS } from '../services/ipfsUploader';
+import contractABI from '../contractABI.json';
+import addPatientRecord from '../transactions/patientRecordAdd';
+import { rsaEncrypt } from '../services/symmetricKeyEncryption';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const FileUploader = ({ onClose, onUpload }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -30,9 +35,9 @@ const FileUploader = ({ onClose, onUpload }) => {
             const signer = await provider.getSigner();
             const userPublicKey = await signer.getAddress();
 
-            const generatedKey = CryptoJS.lib.WordArray.random(32).toString();
-            console.log('Generated key:', generatedKey);
-            const base64Content = await encryptFileToBase64(selectedFile, generatedKey);
+            const symmetricKey = CryptoJS.lib.WordArray.random(32).toString();
+            console.log('Symmetric key:', symmetricKey);
+            const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
 
             const formData = new FormData();
             const fileBlob = new Blob([JSON.stringify({
@@ -46,6 +51,9 @@ const FileUploader = ({ onClose, onUpload }) => {
             formData.append('file', fileBlob, 'metadata.json');
             const uploadResponse = await uploadToIPFS({ file: fileBlob, userPublicKey, onUpload });
             console.log(uploadResponse);
+
+            const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload);
+            console.log(createTxn);
         } catch (error) {
             console.error('Error uploading file:', error);
             setError(error.message || 'Error uploading file. Please try again.');
