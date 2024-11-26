@@ -17,6 +17,7 @@
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
     "lucide-react": "^0.460.0",
+    "noble-secp256k1": "^1.2.14",
     "pinata": "^1.8.1",
     "pinata-web3": "^0.5.2",
     "react": "^18.3.1",
