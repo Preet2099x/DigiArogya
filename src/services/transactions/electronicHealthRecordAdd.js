@@ -15,6 +15,6 @@ export async function addElectronicHealthRecord(userPublicKey, ownerAddress, dat
         gasLimit: 500000
     });
     await tx.wait();
-    onUpload({ ...uploadedData, dataType, publicKey: userPublicKey, signature });
+    // onUpload({ ...uploadedData, dataType, publicKey: userPublicKey, signature });
     return { success: true, hash: tx.hash };
 }

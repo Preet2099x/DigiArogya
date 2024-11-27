@@ -169,9 +169,9 @@
           "type": "uint8"
         },
         {
-          "internalType": "bytes",
+          "internalType": "string",
           "name": "encryptedSymmetricKey",
-          "type": "bytes"
+          "type": "string"
         },
         {
           "internalType": "uint256",
@@ -461,9 +461,9 @@
           "type": "uint8"
         },
         {
-          "internalType": "bytes",
+          "internalType": "string",
           "name": "_encryptedSymmetricKey",
-          "type": "bytes"
+          "type": "string"
         }
       ],
       "name": "addEHRData",
@@ -488,6 +488,11 @@
           "internalType": "enum EHRmain.DataType",
           "name": "_dataType",
           "type": "uint8"
+        },
+        {
+          "internalType": "string",
+          "name": "_encryptedSymmetricKey",
+          "type": "string"
         }
       ],
       "name": "addPHRData",
@@ -579,6 +584,11 @@
           "internalType": "string",
           "name": "_requestId",
           "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_encryptedSymmetricKey",
+          "type": "string"
         }
       ],
       "name": "approvePermission",
@@ -644,9 +654,9 @@
               "type": "uint8"
             },
             {
-              "internalType": "bytes",
+              "internalType": "string",
               "name": "encryptedSymmetricKey",
-              "type": "bytes"
+              "type": "string"
             },
             {
               "internalType": "uint256",

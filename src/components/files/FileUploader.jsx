@@ -7,6 +7,7 @@ import encryptFileToBase64 from '../../services/cryptography/fileEncrypter';
 import { addPatientRecord } from '../../services/transactions/patientRecordAdd';
 import { uploadToIPFS } from '../../services/ipfs/ipfsUploader';
 import { addElectronicHealthRecord } from '../../services/transactions/electronicHealthRecordAdd';
+import { encryptSymmetricKey } from '../../services/cryptography/asymmetricEncryption';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 const FileUploader = ({ onClose, onUpload, userRole }) => {
@@ -45,7 +46,9 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
             const symmetricKey = CryptoJS.lib.WordArray.random(32).toString();
             console.log('Symmetric key:', symmetricKey);
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
-
+            const symmetricKeyUint8 = new Uint8Array(CryptoJS.enc.Hex.parse(symmetricKey).words.map(word => [(word >>> 24) & 0xFF, (word >>> 16) & 0xFF, (word >>> 8) & 0xFF, word & 0xFF]).flat());
+            const encryptedSymmetricKey = encryptSymmetricKey(symmetricKeyUint8);
+            console.log(`Encrypted Symmetric Key ${encryptedSymmetricKey}`);
             const formData = new FormData();
             const fileBlob = new Blob([JSON.stringify({
                 fileName: selectedFile.name,
@@ -61,11 +64,13 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
 
             if (userRole === 'Patient') {
                 console.log('Uploading as Patient...');
-                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload);
+                const encryptedSymmetricKey = "b2f7e1dcb5a785d6a17a473b2c8d0809ef9a60442ed9f50c8e96d5194c7f9b0f";
+                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload,encryptedSymmetricKey);
                 console.log(createTxn);
             } 
             if (userRole === 'Provider') {
                 console.log('Uploading as Provider...');
+                
                 const encryptedSymmetricKey = "b2f7e1dcb5a785d6a17a473b2c8d0809ef9a60442ed9f50c8e96d5194c7f9b0f";
                 const createTxn = await addElectronicHealthRecord(userPublicKey, patientAddress, dataType, uploadResponse, encryptedSymmetricKey, signer, contractAddress, contractABI.abi, onUpload);
                 console.log(createTxn);
