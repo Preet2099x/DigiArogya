@@ -1,4 +1,4 @@
-import { BrowserProvider } from "ethers";
+import { generateAndExportKeys } from "./keyPairGenerator";
 
 export async function encryptSymmetricKey(symmetricKey) {
     if (!window.ethereum) {
@@ -6,21 +6,20 @@ export async function encryptSymmetricKey(symmetricKey) {
         return null;
     }
 
+    const keyPair = await generateAndExportKeys();
     try {
-        const provider = new BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
+        const publicKeyBuffer = await window.crypto.subtle.exportKey(
+            "spki",
+            keyPair.publicKey
+        );
 
-        const userAddress = await signer.getAddress();
-        console.log("User's Ethereum Address:", userAddress);
+        const publicKeyBase64 = btoa(
+            String.fromCharCode(...new Uint8Array(publicKeyBuffer))
+        );
 
-        const publicKey = await window.ethereum.request({
-            method: "eth_getEncryptionPublicKey",
-            params: [userAddress],
-        });
+        console.log("User's Public Key (Base64):", publicKeyBase64);
 
-        console.log("User's Public Key:", publicKey);
-
-        const encryptedKey = await encryptWithPublicKey(publicKey, symmetricKey);
+        const encryptedKey = await encryptWithPublicKey(publicKeyBase64, symmetricKey);
         console.log("Encrypted Key:", encryptedKey);
         return encryptedKey;
     } catch (error) {
@@ -29,11 +28,10 @@ export async function encryptSymmetricKey(symmetricKey) {
     }
 }
 
-export async function encryptWithPublicKey(publicKey, data) {
+export async function encryptWithPublicKey(publicKeyBase64, data) {
     const encoder = new TextEncoder();
     const encodedData = encoder.encode(data);
-
-    const publicKeyBuffer = Uint8Array.from(atob(publicKey), (c) => c.charCodeAt(0));
+    const publicKeyBuffer = Uint8Array.from(atob(publicKeyBase64), (c) => c.charCodeAt(0));
 
     const cryptoKey = await window.crypto.subtle.importKey(
         "spki",
@@ -52,5 +50,30 @@ export async function encryptWithPublicKey(publicKey, data) {
         encodedData
     );
 
-    return Buffer.from(encryptedData).toString("base64");
+    return btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
+}
+export async function decryptWithPrivateKey(privateKeyBase64, encryptedData) {
+    const privateKeyBuffer = Uint8Array.from(atob(privateKeyBase64), (c) => c.charCodeAt(0));
+
+    const cryptoKey = await window.crypto.subtle.importKey(
+        "pkcs8",
+        privateKeyBuffer,
+        {
+            name: "RSA-OAEP",
+            hash: "SHA-256",
+        },
+        false,
+        ["decrypt"]
+    );
+
+    const encryptedBuffer = Uint8Array.from(atob(encryptedData), (c) => c.charCodeAt(0));
+
+    const decryptedData = await window.crypto.subtle.decrypt(
+        { name: "RSA-OAEP" },
+        cryptoKey,
+        encryptedBuffer
+    );
+
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedData);
 }

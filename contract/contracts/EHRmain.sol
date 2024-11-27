@@ -27,7 +27,7 @@ contract EHRmain {
         address owner;
         string ipfsCid; // Replaced dataHash with ipfsCid
         DataType dataType;
-        bytes encryptedSymmetricKey;
+        string encryptedSymmetricKey;
         uint256 timestamp;
         bool isValid;
         address provider;
@@ -127,7 +127,7 @@ contract EHRmain {
         address _patientAddress,
         string memory _ipfsCid,
         DataType _dataType,
-        bytes memory _encryptedSymmetricKey
+        string memory _encryptedSymmetricKey
     ) external onlyProvider returns (bool) {
         require(_patientAddress != address(0), "Invalid patient address");
         require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
@@ -154,7 +154,8 @@ contract EHRmain {
 
     function addPHRData(
         string memory _ipfsCid,
-        DataType _dataType
+        DataType _dataType,
+        string memory _encryptedSymmetricKey
     ) external onlyPatient returns (bool) {
         require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
 
@@ -162,7 +163,7 @@ contract EHRmain {
             owner: msg.sender,
             ipfsCid: _ipfsCid,
             dataType: _dataType,
-            encryptedSymmetricKey: new bytes(0),
+            encryptedSymmetricKey: _encryptedSymmetricKey,
             timestamp: block.timestamp,
             isValid: true,
             provider: msg.sender
@@ -254,7 +255,7 @@ contract EHRmain {
 
     function approvePermission(
         string memory _requestId,
-        bytes memory _encryptedSymmetricKey // Added encrypted symmetric key as parameter
+        string memory _encryptedSymmetricKey // Added encrypted symmetric key as parameter
     ) external returns (bool) {
         PermissionRequest storage request = permissionRequests[_requestId];
         require(request.owner == msg.sender, "Only owner can approve");
