@@ -1,12 +1,10 @@
-import { generateAndExportKeys } from "./keyPairGenerator";
-
-export async function encryptSymmetricKey(symmetricKey) {
+export async function encryptSymmetricKey(symmetricKey,keyPair) {
     if (!window.ethereum) {
         alert("MetaMask is required!");
         return null;
     }
 
-    const keyPair = await generateAndExportKeys();
+    
     try {
         const publicKeyBuffer = await window.crypto.subtle.exportKey(
             "spki",
@@ -21,6 +19,7 @@ export async function encryptSymmetricKey(symmetricKey) {
 
         const encryptedKey = await encryptWithPublicKey(publicKeyBase64, symmetricKey);
         console.log("Encrypted Key:", encryptedKey);
+
         return encryptedKey;
     } catch (error) {
         console.error("Encryption failed:", error);
@@ -28,9 +27,9 @@ export async function encryptSymmetricKey(symmetricKey) {
     }
 }
 
-export async function encryptWithPublicKey(publicKeyBase64, data) {
+export async function encryptWithPublicKey(publicKeyBase64, symmetricKey) {
     const encoder = new TextEncoder();
-    const encodedData = encoder.encode(data);
+    const encodedSymmetricKey = encoder.encode(symmetricKey);
     const publicKeyBuffer = Uint8Array.from(atob(publicKeyBase64), (c) => c.charCodeAt(0));
 
     const cryptoKey = await window.crypto.subtle.importKey(
@@ -44,15 +43,16 @@ export async function encryptWithPublicKey(publicKeyBase64, data) {
         ["encrypt"]
     );
 
-    const encryptedData = await window.crypto.subtle.encrypt(
+    const encryptedSymmetricKey = await window.crypto.subtle.encrypt(
         { name: "RSA-OAEP" },
         cryptoKey,
         encodedData
     );
 
-    return btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
+    return btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)));
 }
-export async function decryptWithPrivateKey(privateKeyBase64, encryptedData) {
+
+export async function decryptWithPrivateKey(privateKeyBase64, encryptedSymmetricKey) {
     const privateKeyBuffer = Uint8Array.from(atob(privateKeyBase64), (c) => c.charCodeAt(0));
 
     const cryptoKey = await window.crypto.subtle.importKey(
@@ -66,14 +66,14 @@ export async function decryptWithPrivateKey(privateKeyBase64, encryptedData) {
         ["decrypt"]
     );
 
-    const encryptedBuffer = Uint8Array.from(atob(encryptedData), (c) => c.charCodeAt(0));
+    const encryptedBuffer = Uint8Array.from(atob(encryptedSymmetricKey), (c) => c.charCodeAt(0));
 
-    const decryptedData = await window.crypto.subtle.decrypt(
+    const decryptedSymmetricKey = await window.crypto.subtle.decrypt(
         { name: "RSA-OAEP" },
         cryptoKey,
         encryptedBuffer
     );
 
     const decoder = new TextDecoder();
-    return decoder.decode(decryptedData);
+    return decoder.decode(decryptedSymmetricKey);
 }

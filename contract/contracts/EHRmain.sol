@@ -46,6 +46,13 @@ contract EHRmain {
         bool isIncentiveBased;
     }
 
+
+    // Struct to hold public and private keys
+    struct KeyPair {
+        string publicKeyForEncryption;
+        // string encryptedPrivateKey;
+    }
+
     // State variables
     mapping(address => User) public users;
     mapping(string => HealthRecord) public healthRecords; // Changed data type from bytes32 to string
@@ -54,6 +61,10 @@ contract EHRmain {
 
     // Mapping to store health record IPFS CIDs by owner address
     mapping(address => string[]) public ownerToHealthRecords;
+
+    // Mapping to store the keyPair (PU,PK) of a user ( here one of the key is encrypted so it is secure)
+    mapping(address => KeyPair) public userKeys;
+
     
     // System variables
     address public systemOwner;
@@ -101,7 +112,9 @@ contract EHRmain {
     // Registry Contract Functions
     function registerUser(
         Role _role,
-        bytes32 _publicKeyHash
+        bytes32 _publicKeyHash,
+        string memory _publicKeyForEncryption
+        // string memory _encryptedPrivateKey
     ) external returns (bool) {
         require(users[msg.sender].userAddress == address(0), "User already registered");
         require(_role != Role.NONE, "Invalid role");
@@ -113,10 +126,26 @@ contract EHRmain {
             publicKeyHash: _publicKeyHash
         });
 
+        userKeys[msg.sender] = KeyPair({
+            publicKeyForEncryption: _publicKeyForEncryption
+            // encryptedPrivateKey: _encryptedPrivateKey
+        });
+
         totalUsers++;
         emit UserRegistered(msg.sender, _role);
         return true;
     }
+
+    function getKeyPair(address userAddress)
+        external
+        view
+        returns (string memory)
+    {
+        require(users[userAddress].userAddress != address(0), "User not registered");
+        KeyPair memory keys = userKeys[userAddress];
+        return (keys.publicKeyForEncryption);
+    }
+
 
     function checkUser(address _userAddress) public view returns (Role) {
         return users[_userAddress].role;

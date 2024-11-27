@@ -10,7 +10,7 @@ import { downloadFromIPFS } from '../../services/ipfs/ipfsDownloader';
 
 window.Buffer = window.Buffer || Buffer;
 
-const FileDownloader = ({ ipfsHash }) => {
+const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
     const [decryptionKey, setDecryptionKey] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import contractABI from '../../contractABI.json';
+import { generateAndExportKeys } from '../../services/cryptography/keyPairGenerator';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -109,7 +110,9 @@ const Register = () => {
         throw new Error("Contract function registerUser not found");
       }
 
-      const tx = await contract.registerUser(roleValue, publicKeyHash);
+      const keyPair = await generateAndExportKeys();
+
+      const tx = await contract.registerUser(roleValue, publicKeyHash, keyPair.publicKey);
       await tx.wait();
 
       toast.success(`${role} registered successfully!`);

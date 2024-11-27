@@ -39,7 +39,9 @@ const PatientDashboard = () => {
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [hashForDownload, setHashForDownload] = useState('');
+  const [encryptedSymmetricKey,setEncryptedSymmetricKey] = useState('');
   const navigate = useNavigate();
+  
 
   // Define fetchHealthRecords function
   const fetchHealthRecords = async () => {
@@ -61,7 +63,10 @@ const PatientDashboard = () => {
         provider: record.provider,
         timestamp: Number(record.timestamp), // Convert BigInt to Number
         isValid: record.isValid,
+        encryptedSymmetricKey: record.encryptedSymmetricKey
       }));
+
+
 
       // Reverse the records array to show the latest first
       setHealthRecords(fetchedRecords.reverse());
@@ -198,6 +203,7 @@ const PatientDashboard = () => {
                           onClick={() => {
                             handleDownloadDialog(true);
                             setHashForDownload(record.ipfsCid);
+                            setEncryptedSymmetricKey(record.encryptedSymmetricKey);
                           }}>
                           View</Button>
                       </TableCell>
@@ -261,6 +267,7 @@ const PatientDashboard = () => {
           <FileDownloader
             onClose={() => handleDownloadDialog(false)}
             ipfsHash={hashForDownload}
+            encryptedSymmetricKey
           />
         </Dialog>
       </Box>
