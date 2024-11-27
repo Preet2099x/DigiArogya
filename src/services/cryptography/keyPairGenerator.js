@@ -1,6 +1,5 @@
 export async function generateAndExportKeys() {
     try {
-        // Generate the RSA key pair
         const keyPair = await crypto.subtle.generateKey(
             {
                 name: "RSA-OAEP",
@@ -12,7 +11,6 @@ export async function generateAndExportKeys() {
             ["encrypt", "decrypt"]
         );
 
-        // Return the keyPair directly
         return keyPair;
     } catch (err) {
         console.error("Error generating keys:", err);

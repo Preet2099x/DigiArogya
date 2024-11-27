@@ -7,7 +7,7 @@
     ```
 3. Create the `.cert` directory in the root folder of your project if it doesn't exist:
     ```sh
-    mkdir -p .cert
+    mkdir .cert
     ```
 4. Generate the certificate (run from the root of this project):
     ```sh
