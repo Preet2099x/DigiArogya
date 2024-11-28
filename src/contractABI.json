@@ -1,5 +1,5 @@
 {
-   "abi": [
+  "abi": [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
@@ -372,6 +372,26 @@
           "type": "address"
         }
       ],
+      "name": "userKeys",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "publicKeyForEncryption",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
       "name": "users",
       "outputs": [
         {
@@ -410,6 +430,11 @@
           "internalType": "bytes32",
           "name": "_publicKeyHash",
           "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "_publicKeyForEncryption",
+          "type": "string"
         }
       ],
       "name": "registerUser",
@@ -422,6 +447,26 @@
       ],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "userAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getKeyPair",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [

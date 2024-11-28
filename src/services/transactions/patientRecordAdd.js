@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { getDataTypeEnum } from "../../utils/getDataType";
 
-export async function addPatientRecord(userPublicKey, dataType, uploadedData, signer, contractAddress, contractABI, onUpload,encryptedSymmetricKey) {
+export async function addPatientRecord(userPublicKey, dataType, uploadedData, signer, contractAddress, contractABI, onUpload, encryptedSymmetricKey) {
     const transactionData = JSON.stringify({
         publicKey: userPublicKey,
         dataType: dataType,

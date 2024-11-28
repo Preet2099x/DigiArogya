@@ -1,6 +1,6 @@
 import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import CryptoJS from 'crypto-js';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, ethers } from 'ethers';
 import React, { useState } from 'react';
 import contractABI from '../../contractABI.json';
 import { encryptSymmetricKey } from '../../services/cryptography/asymmetricEncryption';
@@ -25,7 +25,6 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
     const handleDataTypeChange = (event) => setDataType(event.target.value);
 
     const handlePatientAddressChange = (event) => setPatientAddress(event.target.value);
-
     const handleFileUpload = async () => {
         if (!selectedFile || !dataType) {
             setError('Please select both a file and data type.');
@@ -42,12 +41,14 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const userPublicKey = await signer.getAddress();
-
+            const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+            const publicKeyForEncryption = await contract.getKeyPair(userPublicKey);
             const symmetricKey = CryptoJS.lib.WordArray.random(32).toString();
             console.log('Symmetric key:', symmetricKey);
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
-            const encryptedSymmetricKey = encryptSymmetricKey(symmetricKey);
-            if (encryptedSymmetricKey) console.log(`Encrypted Symmetric Key ${encryptedSymmetricKey}`);
+            const base64EncryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
+            const encryptedSymmetricKey = Buffer.from(base64EncryptedSymmetricKey, 'base64').toString('hex');
+            console.log(`Encrypted Symmetric Key from File Uploader is ${encryptedSymmetricKey}`);
             const formData = new FormData();
             const fileBlob = new Blob([JSON.stringify({
                 fileName: selectedFile.name,
@@ -64,7 +65,7 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
             if (userRole === 'Patient') {
                 console.log('Uploading as Patient...');
                 const encryptedSymmetricKey = "b2f7e1dcb5a785d6a17a473b2c8d0809ef9a60442ed9f50c8e96d5194c7f9b0f";
-                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, encryptedSymmetricKey);
+                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, symmetricKey);
                 console.log(createTxn);
             }
             if (userRole === 'Provider') {

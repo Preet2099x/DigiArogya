@@ -7,16 +7,17 @@ import React, { useState } from 'react';
 import { Buffer } from 'buffer';
 import decryptBase64ToFile from '../../services/cryptography/fileDecrypter';
 import { downloadFromIPFS } from '../../services/ipfs/ipfsDownloader';
+import { decryptWithPrivateKey } from '../../services/cryptography/asymmetricEncryption';
 
 window.Buffer = window.Buffer || Buffer;
 
-const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
-    const [decryptionKey, setDecryptionKey] = useState('');
+const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
+    const [privateKeyForDecryption, setPrivateKeyForDecryption] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const handleDownload = async () => {
-        if (!ipfsHash || !decryptionKey) {
+        if (!ipfsHash || !privateKeyForDecryption) {
             setError('Please provide both IPFS hash and decryption key');
             return;
         }
@@ -25,12 +26,14 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
         setError('');
 
         try {
+            console.log(`Encrypted Symmetric Key: ${encryptedSymmetricKey}`);
             console.log('Starting download process...');
-
+            const decryptedSymmetricKey = await decryptWithPrivateKey(privateKeyForDecryption, encryptedSymmetricKey);
+            console.log(`Decrypted Symmetric Key: ${decryptedSymmetricKey}`);
             const { encryptedContent, fileType, fileName } = await downloadFromIPFS(ipfsHash);
             console.log(`File downloaded successfully: ${fileName}.${fileType} file`);
 
-            const decryptedBlob = decryptBase64ToFile(encryptedContent, decryptionKey);
+            const decryptedBlob = decryptBase64ToFile(encryptedContent, decryptedSymmetricKey);
             console.log('Content decrypted successfully');
 
             const downloadUrl = URL.createObjectURL(new File([decryptedBlob], fileName, { type: fileType }));
@@ -54,7 +57,7 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
 
 
     return (
-        <Card sx={{ maxWidth: 600, margin: '0 auto', padding: 2 }}>
+        <Card sx={{ maxWidth: 800, margin: '0 auto', padding: 2 }}>
             <CardHeader
                 title="Download Encrypted File"
                 sx={{ textAlign: 'center' }}
@@ -67,14 +70,15 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
                         value={ipfsHash}
                         placeholder="Enter IPFS hash"
                         variant="outlined"
+                        disabled
                     />
 
                     <TextField
                         fullWidth
-                        label="Decryption Key"
+                        label="Enter your Private Key"
                         type="password"
-                        value={decryptionKey}
-                        onChange={(e) => setDecryptionKey(e.target.value)}
+                        value={privateKeyForDecryption}
+                        onChange={(e) => setPrivateKeyForDecryption(e.target.value)}
                         placeholder="Enter decryption key"
                         variant="outlined"
                     />
@@ -95,7 +99,7 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey}) => {
                         variant="contained"
                         color="primary"
                         onClick={handleDownload}
-                        disabled={loading || !ipfsHash || !decryptionKey}
+                        disabled={loading || !ipfsHash || !privateKeyForDecryption}
                         fullWidth
                         sx={{ mt: 2 }}
                         startIcon={loading ? <Loader2 /> : <Download />}

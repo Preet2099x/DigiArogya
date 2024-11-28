@@ -3,17 +3,37 @@ pragma solidity ^0.8.0;
 
 contract EHRmain {
     // User roles
-    enum Role { NONE, PATIENT, PROVIDER, RESEARCHER }
-    
+    enum Role {
+        NONE,
+        PATIENT,
+        PROVIDER,
+        RESEARCHER
+    }
+
     // Data types
-    enum DataType { EHR, PHR, LAB_RESULT, PRESCRIPTION, IMAGING }
-    
+    enum DataType {
+        EHR,
+        PHR,
+        LAB_RESULT,
+        PRESCRIPTION,
+        IMAGING
+    }
+
     // Permission types
-    enum PermissionType { NONE, INCENTIVEBASED, NONINCENTIVEBASED }
-    
+    enum PermissionType {
+        NONE,
+        INCENTIVEBASED,
+        NONINCENTIVEBASED
+    }
+
     // Status of permission requests
-    enum RequestStatus { PENDING, APPROVED, REJECTED, EXPIRED }
-    
+    enum RequestStatus {
+        PENDING,
+        APPROVED,
+        REJECTED,
+        EXPIRED
+    }
+
     // Structs for storing user data
     struct User {
         address userAddress;
@@ -46,7 +66,6 @@ contract EHRmain {
         bool isIncentiveBased;
     }
 
-
     // Struct to hold public and private keys
     struct KeyPair {
         string publicKeyForEncryption;
@@ -57,7 +76,8 @@ contract EHRmain {
     mapping(address => User) public users;
     mapping(string => HealthRecord) public healthRecords; // Changed data type from bytes32 to string
     mapping(string => PermissionRequest) public permissionRequests; // Changed data type from bytes32 to string
-    mapping(address => mapping(string => mapping(address => bool))) public permissions;
+    mapping(address => mapping(string => mapping(address => bool)))
+        public permissions;
 
     // Mapping to store health record IPFS CIDs by owner address
     mapping(address => string[]) public ownerToHealthRecords;
@@ -65,7 +85,6 @@ contract EHRmain {
     // Mapping to store the keyPair (PU,PK) of a user ( here one of the key is encrypted so it is secure)
     mapping(address => KeyPair) public userKeys;
 
-    
     // System variables
     address public systemOwner;
     uint256 public totalUsers;
@@ -74,31 +93,59 @@ contract EHRmain {
 
     // Events
     event UserRegistered(address indexed userAddress, Role role);
-    event HealthRecordAdded(string indexed ipfsCid, address indexed owner, DataType dataType);
-    event PermissionRequested(string indexed requestId, address indexed requester, address indexed owner);
-    event PermissionGranted(string indexed requestId, address indexed requester, address indexed owner);
-    event PermissionRevoked(string indexed ipfsCid, address indexed revokedUser);
-    event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
+    event HealthRecordAdded(
+        string indexed ipfsCid,
+        address indexed owner,
+        DataType dataType
+    );
+    event PermissionRequested(
+        string indexed requestId,
+        address indexed requester,
+        address indexed owner
+    );
+    event PermissionGranted(
+        string indexed requestId,
+        address indexed requester,
+        address indexed owner
+    );
+    event PermissionRevoked(
+        string indexed ipfsCid,
+        address indexed revokedUser
+    );
+    event EmergencyAccess(
+        address indexed provider,
+        address indexed patient,
+        uint256 timestamp
+    );
 
     // Modifiers
     modifier onlySystemOwner() {
-        require(msg.sender == systemOwner, "Only system owner can call this function");
+        require(
+            msg.sender == systemOwner,
+            "Only system owner can call this function"
+        );
         _;
     }
 
     modifier onlyProvider() {
-        require(users[msg.sender].role == Role.PROVIDER, "Only healthcare providers can call this function");
+        require(
+            users[msg.sender].role == Role.PROVIDER,
+            "Only healthcare providers can call this function"
+        );
         _;
     }
 
     modifier onlyPatient() {
-        require(users[msg.sender].role == Role.PATIENT, "Only patients can call this function");
-        _; 
+        require(
+            users[msg.sender].role == Role.PATIENT,
+            "Only patients can call this function"
+        );
+        _;
     }
 
     modifier recordExists(string memory _ipfsCid) {
         require(healthRecords[_ipfsCid].isValid, "Record does not exist");
-        _; 
+        _;
     }
 
     // Constructor
@@ -113,10 +160,18 @@ contract EHRmain {
     function registerUser(
         Role _role,
         bytes32 _publicKeyHash,
-        string memory _publicKeyForEncryption
-        // string memory _encryptedPrivateKey
-    ) external returns (bool) {
-        require(users[msg.sender].userAddress == address(0), "User already registered");
+        string calldata _publicKeyForEncryption
+    )
+        external
+        returns (
+            // string memory _encryptedPrivateKey
+            bool
+        )
+    {
+        require(
+            users[msg.sender].userAddress == address(0),
+            "User already registered"
+        );
         require(_role != Role.NONE, "Invalid role");
 
         users[msg.sender] = User({
@@ -136,16 +191,16 @@ contract EHRmain {
         return true;
     }
 
-    function getKeyPair(address userAddress)
-        external
-        view
-        returns (string memory)
-    {
-        require(users[userAddress].userAddress != address(0), "User not registered");
+    function getKeyPair(
+        address userAddress
+    ) external view returns (string memory) {
+        require(
+            users[userAddress].userAddress != address(0),
+            "User not registered"
+        );
         KeyPair memory keys = userKeys[userAddress];
         return (keys.publicKeyForEncryption);
     }
-
 
     function checkUser(address _userAddress) public view returns (Role) {
         return users[_userAddress].role;
@@ -159,7 +214,10 @@ contract EHRmain {
         string memory _encryptedSymmetricKey
     ) external onlyProvider returns (bool) {
         require(_patientAddress != address(0), "Invalid patient address");
-        require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
+        require(
+            bytes(healthRecords[_ipfsCid].ipfsCid).length == 0,
+            "Record already exists"
+        );
 
         Role patientRole = checkUser(_patientAddress);
         require(patientRole == Role.PATIENT, "Invalid patient");
@@ -174,8 +232,8 @@ contract EHRmain {
             provider: msg.sender
         });
 
-        ownerToHealthRecords[_patientAddress].push(_ipfsCid);  // Store the CID for the owner
-        
+        ownerToHealthRecords[_patientAddress].push(_ipfsCid); // Store the CID for the owner
+
         totalRecords++;
         emit HealthRecordAdded(_ipfsCid, _patientAddress, _dataType);
         return true;
@@ -184,9 +242,12 @@ contract EHRmain {
     function addPHRData(
         string memory _ipfsCid,
         DataType _dataType,
-        string memory _encryptedSymmetricKey
+        string calldata _encryptedSymmetricKey
     ) external onlyPatient returns (bool) {
-        require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
+        require(
+            bytes(healthRecords[_ipfsCid].ipfsCid).length == 0,
+            "Record already exists"
+        );
 
         healthRecords[_ipfsCid] = HealthRecord({
             owner: msg.sender,
@@ -198,18 +259,16 @@ contract EHRmain {
             provider: msg.sender
         });
 
-        ownerToHealthRecords[msg.sender].push(_ipfsCid);  // Store the CID for the owner
-        
+        ownerToHealthRecords[msg.sender].push(_ipfsCid); // Store the CID for the owner
+
         totalRecords++;
         emit HealthRecordAdded(_ipfsCid, msg.sender, _dataType);
         return true;
     }
 
-    function invalidateRecord(string memory _ipfsCid) 
-        external 
-        recordExists(_ipfsCid) 
-        onlySystemOwner 
-    {
+    function invalidateRecord(
+        string memory _ipfsCid
+    ) external recordExists(_ipfsCid) onlySystemOwner {
         healthRecords[_ipfsCid].isValid = false;
     }
 
@@ -220,15 +279,19 @@ contract EHRmain {
         PermissionType _permissionType
     ) external recordExists(_ipfsCid) returns (string memory) {
         require(_owner != address(0), "Invalid owner address");
-        require(_permissionType != PermissionType.NONE, "Invalid permission type");
-        require(keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) == keccak256(abi.encodePacked(_owner)), "Invalid record owner");
+        require(
+            _permissionType != PermissionType.NONE,
+            "Invalid permission type"
+        );
+        require(
+            keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) ==
+                keccak256(abi.encodePacked(_owner)),
+            "Invalid record owner"
+        );
 
-        string memory requestId = string(abi.encodePacked(
-            msg.sender,
-            _owner,
-            _ipfsCid,
-            block.timestamp
-        ));
+        string memory requestId = string(
+            abi.encodePacked(msg.sender, _owner, _ipfsCid, block.timestamp)
+        );
 
         permissionRequests[requestId] = PermissionRequest({
             requester: msg.sender,
@@ -253,17 +316,26 @@ contract EHRmain {
         PermissionType _permissionType
     ) external payable recordExists(_ipfsCid) returns (string memory) {
         require(_owner != address(0), "Invalid owner address");
-        require(_permissionType != PermissionType.NONE, "Invalid permission type");
+        require(
+            _permissionType != PermissionType.NONE,
+            "Invalid permission type"
+        );
         require(msg.value > 0, "Incentive amount required");
-        require(keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) == keccak256(abi.encodePacked(_owner)), "Invalid record owner");
-        
-        string memory requestId = string(abi.encodePacked(
-            msg.sender,
-            _owner,
-            _ipfsCid,
-            block.timestamp,
-            msg.value
-        ));
+        require(
+            keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) ==
+                keccak256(abi.encodePacked(_owner)),
+            "Invalid record owner"
+        );
+
+        string memory requestId = string(
+            abi.encodePacked(
+                msg.sender,
+                _owner,
+                _ipfsCid,
+                block.timestamp,
+                msg.value
+            )
+        );
 
         permissionRequests[requestId] = PermissionRequest({
             requester: msg.sender,
@@ -288,10 +360,12 @@ contract EHRmain {
     ) external returns (bool) {
         PermissionRequest storage request = permissionRequests[_requestId];
         require(request.owner == msg.sender, "Only owner can approve");
-        require(request.status == RequestStatus.PENDING, "Invalid request status");
+        require(
+            request.status == RequestStatus.PENDING,
+            "Invalid request status"
+        );
         require(block.timestamp <= request.expiryDate, "Request expired");
 
-    
         request.status = RequestStatus.APPROVED;
 
         // Update permissions mapping to grant access
@@ -305,7 +379,6 @@ contract EHRmain {
         return true;
     }
 
-
     function revokePermission(
         string memory _ipfsCid,
         address _user
@@ -316,28 +389,34 @@ contract EHRmain {
     }
 
     // Access control
-    function getHealthRecordsByOwner(address userAddress) 
-        public view returns (HealthRecord[] memory) 
-    {
+    function getHealthRecordsByOwner(
+        address userAddress
+    ) public view returns (HealthRecord[] memory) {
         uint256 totalRecordsForOwner = ownerToHealthRecords[userAddress].length;
-        HealthRecord[] memory records = new HealthRecord[](totalRecordsForOwner);
-        
+        HealthRecord[] memory records = new HealthRecord[](
+            totalRecordsForOwner
+        );
+
         // Loop through each record of the owner and populate the HealthRecord array
         for (uint256 i = 0; i < totalRecordsForOwner; i++) {
             string memory ipfsCid = ownerToHealthRecords[userAddress][i];
             HealthRecord memory record = healthRecords[ipfsCid];
             records[i] = record;
         }
-        
+
         return records;
     }
 
     // Emergency Access
-    function emergencyAccess(address _patientAddress) 
-        external onlyProvider returns (bool) 
-    {
-        require(keccak256(abi.encodePacked(users[_patientAddress].role)) == keccak256(abi.encodePacked(Role.PATIENT)), "Patient not found");
-        
+    function emergencyAccess(
+        address _patientAddress
+    ) external onlyProvider returns (bool) {
+        require(
+            keccak256(abi.encodePacked(users[_patientAddress].role)) ==
+                keccak256(abi.encodePacked(Role.PATIENT)),
+            "Patient not found"
+        );
+
         emit EmergencyAccess(msg.sender, _patientAddress, block.timestamp);
         return true;
     }

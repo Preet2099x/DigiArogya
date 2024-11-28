@@ -1,23 +1,22 @@
-export async function encryptSymmetricKey(symmetricKey,keyPair) {
+export async function encryptSymmetricKey(symmetricKey, publicKeyForEncryption) {
     if (!window.ethereum) {
         alert("MetaMask is required!");
         return null;
     }
 
-    
     try {
-        const publicKeyBuffer = await window.crypto.subtle.exportKey(
-            "spki",
-            keyPair.publicKey
-        );
+        // const publicKeyBuffer = await window.crypto.subtle.exportKey(
+        //     "spki",
+        //     publicKeyForEncryption
+        // );
 
-        const publicKeyBase64 = btoa(
-            String.fromCharCode(...new Uint8Array(publicKeyBuffer))
-        );
+        // const publicKeyBase64 = btoa(
+        //     String.fromCharCode(...new Uint8Array(publicKeyBuffer))
+        // );
 
-        console.log("User's Public Key (Base64):", publicKeyBase64);
+        console.log("User's Public Key (Base64):", publicKeyForEncryption);
 
-        const encryptedKey = await encryptWithPublicKey(publicKeyBase64, symmetricKey);
+        const encryptedKey = await encryptWithPublicKey(publicKeyForEncryption, symmetricKey);
         console.log("Encrypted Key:", encryptedKey);
 
         return encryptedKey;
@@ -46,7 +45,7 @@ export async function encryptWithPublicKey(publicKeyBase64, symmetricKey) {
     const encryptedSymmetricKey = await window.crypto.subtle.encrypt(
         { name: "RSA-OAEP" },
         cryptoKey,
-        encodedData
+        encodedSymmetricKey
     );
 
     return btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)));

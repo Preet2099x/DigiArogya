@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import LogoutButton from '../ui/LogoutButton';
-import { ToastContainer } from "react-toastify";
-import { Box, Card, Typography, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, Chip } from '@mui/material';
-import { Add, FileDownload } from '@mui/icons-material';
-import FileUploader from '../files/FileUploader';
-import { ethers, BrowserProvider } from 'ethers';
-import contractABI from '../../contractABI.json';
+import { Add } from '@mui/icons-material';
+import { Box, Button, Card, Chip, Dialog, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Typography } from '@mui/material';
 import { format } from 'date-fns'; // Import date formatting utility
+import { BrowserProvider, ethers } from 'ethers';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ToastContainer } from "react-toastify";
+import contractABI from '../../contractABI.json';
 import FileDownloader from '../files/FileDownloader';
-import permissionContract from '../../services/blockchain/permissionContract'
+import FileUploader from '../files/FileUploader';
+import LogoutButton from '../ui/LogoutButton';
 
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
@@ -39,9 +38,9 @@ const PatientDashboard = () => {
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [hashForDownload, setHashForDownload] = useState('');
-  const [encryptedSymmetricKey,setEncryptedSymmetricKey] = useState('');
+  const [encryptedSymmetricKey, setEncryptedSymmetricKey] = useState('');
   const navigate = useNavigate();
-  
+
 
   // Define fetchHealthRecords function
   const fetchHealthRecords = async () => {
@@ -177,6 +176,7 @@ const PatientDashboard = () => {
                     <TableCell>Date</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>IPFS CID</TableCell>
+                    <TableCell>Encrypted Symmetric Key</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -198,6 +198,7 @@ const PatientDashboard = () => {
                           {record.ipfsCid}
                         </a>
                       </TableCell>
+                      <TableCell>{record.encryptedSymmetricKey}</TableCell>
                       <TableCell>
                         <Button variant="outlined" size="small" sx={{ color: '#00796b', borderColor: '#00796b' }}
                           onClick={() => {
@@ -267,7 +268,7 @@ const PatientDashboard = () => {
           <FileDownloader
             onClose={() => handleDownloadDialog(false)}
             ipfsHash={hashForDownload}
-            encryptedSymmetricKey
+            encryptedSymmetricKey={encryptedSymmetricKey}
           />
         </Dialog>
       </Box>

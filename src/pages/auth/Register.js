@@ -22,17 +22,17 @@ const Register = () => {
       toast.error("MetaMask is not installed!");
       return null;
     }
-  
+
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = await provider.getSigner();
       const publicAddress = signer.address;
-  
+
       if (!isAddress(publicAddress)) {
         throw new Error("Invalid Ethereum address");
       }
-  
+
       const addressHash = keccak256(toUtf8Bytes(publicAddress));
       return addressHash;
     } catch (error) {
@@ -61,11 +61,11 @@ const Register = () => {
         toast.warning('Please connect to MetaMask.');
       }
     };
-  
+
     if (typeof window.ethereum !== 'undefined') {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
     }
-  
+
     return () => {
       if (typeof window.ethereum !== 'undefined') {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
@@ -94,7 +94,7 @@ const Register = () => {
       toast.warning('Please select a role before registering.');
       return;
     }
-    
+
     setLoading(true);
     try {
       const signer = await connectWallet();
@@ -111,17 +111,49 @@ const Register = () => {
       }
 
       const keyPair = await generateAndExportKeys();
+      const publicKeyBuffer = await window.crypto.subtle.exportKey(
+        "spki",
+        keyPair.publicKey
+      );
 
-      const tx = await contract.registerUser(roleValue, publicKeyHash, keyPair.publicKey);
+      const publicKeyBase64 = btoa(
+        String.fromCharCode(...new Uint8Array(publicKeyBuffer))
+      );
+
+      console.log("User's Public Key (Base64):", publicKeyBase64);
+      if (publicKeyBase64)
+        console.log(`PublicKey: ${publicKeyBase64}`);
+      const tx = await contract.registerUser(roleValue, publicKeyHash, publicKeyBase64);
       await tx.wait();
 
+      const privateKeyBuffer = await window.crypto.subtle.exportKey(
+        "pkcs8",
+        keyPair.privateKey
+      );
+
+      const privateKeyBase64 = btoa(
+        String.fromCharCode(...new Uint8Array(privateKeyBuffer))
+      );
+      const privateKeyBlob = new Blob([privateKeyBase64], { type: 'text/plain' });
+      const downloadUrl = URL.createObjectURL(privateKeyBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = 'privateKey.txt';
+
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      URL.revokeObjectURL(downloadUrl);
+      console.log('Download completed successfully');
+
       toast.success(`${role} registered successfully!`);
-      
+
       // Delay navigation slightly to allow toast to be seen
       setTimeout(() => {
         navigate('/');
       }, 2000);
-      
+
     } catch (error) {
       console.error("Error during registration:", error);
       toast.error('Registration failed: User already registered or other error');
