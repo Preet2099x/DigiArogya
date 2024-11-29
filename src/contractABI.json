@@ -59,10 +59,10 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "string",
+          "indexed": false,
+          "internalType": "bytes32",
           "name": "requestId",
-          "type": "string"
+          "type": "bytes32"
         },
         {
           "indexed": true,
@@ -84,10 +84,10 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "string",
+          "indexed": false,
+          "internalType": "bytes32",
           "name": "requestId",
-          "type": "string"
+          "type": "bytes32"
         },
         {
           "indexed": true,
@@ -221,9 +221,29 @@
     {
       "inputs": [
         {
-          "internalType": "string",
+          "internalType": "uint256",
           "name": "",
-          "type": "string"
+          "type": "uint256"
+        }
+      ],
+      "name": "permissionRequestIds",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
         }
       ],
       "name": "permissionRequests",
@@ -237,6 +257,11 @@
           "internalType": "address",
           "name": "owner",
           "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "requestId",
+          "type": "bytes32"
         },
         {
           "internalType": "string",
@@ -585,13 +610,85 @@
       "name": "requestNonIncentiveBasedPermission",
       "outputs": [
         {
-          "internalType": "string",
+          "internalType": "bytes32",
           "name": "",
-          "type": "string"
+          "type": "bytes32"
         }
       ],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "patient",
+          "type": "address"
+        }
+      ],
+      "name": "getPendingRequestsForPatient",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requester",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "requestId",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "string",
+              "name": "ipfsCid",
+              "type": "string"
+            },
+            {
+              "internalType": "enum EHRmain.PermissionType",
+              "name": "permissionType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "enum EHRmain.RequestStatus",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "requestDate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiryDate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "incentiveAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isIncentiveBased",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct EHRmain.PermissionRequest[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -614,9 +711,9 @@
       "name": "requestIncentiveBasedPermission",
       "outputs": [
         {
-          "internalType": "string",
+          "internalType": "bytes32",
           "name": "",
-          "type": "string"
+          "type": "bytes32"
         }
       ],
       "stateMutability": "payable",
@@ -626,9 +723,9 @@
     {
       "inputs": [
         {
-          "internalType": "string",
+          "internalType": "bytes32",
           "name": "_requestId",
-          "type": "string"
+          "type": "bytes32"
         },
         {
           "internalType": "string",

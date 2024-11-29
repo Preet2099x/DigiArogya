@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import { Box, Button, Card, Chip, Dialog, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Typography } from '@mui/material';
 import { format } from 'date-fns'; // Import date formatting utility
-import { BrowserProvider, ethers } from 'ethers';
+import { BrowserProvider, ethers,formatEther,BigNumber } from 'ethers';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer } from "react-toastify";
@@ -21,20 +21,17 @@ const dataTypeMap = {
   3: "Prescription",  // Corresponds to PRESCRIPTION
   4: "Imaging",      // Corresponds to IMAGING
 };
+const statusMap = {
+  0: "Pending",
+  1: "Approved",
+  2: "Rejected",
+  3: "Completed",  // Add more status codes as needed
+};
 
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
   const [healthRecords, setHealthRecords] = useState([]);
-  const [permissionRequests, setPermissionRequests] = useState([
-    {
-      requestId: '0x789...',
-      requester: '0xabc...',
-      requestDate: '2024-03-12',
-      status: 'PENDING',
-      isIncentiveBased: true,
-      incentiveAmount: '0.1 ETH',
-    },
-  ]);
+  const [permissionRequests, setPermissionRequests] = useState([]);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [hashForDownload, setHashForDownload] = useState('');
@@ -74,51 +71,77 @@ const PatientDashboard = () => {
       alert('Error fetching health records. Please try again.');
     }
   };
-  // const fetchPermissionRequests = async () => {
-  //   try {
-  //     // Ensure the user is connected to a wallet
-  //     if (!window.ethereum) {
-  //       alert("Please install MetaMask!");
-  //       return;
-  //     }
-
-  //     const provider = new ethers.providers.Web3Provider(window.ethereum);
-  //     const signer = provider.getSigner();
-
-  //     // Connect to the smart contract
-  //     const contract = new ethers.Contract(
-  //       permissionContract.address,
-  //       permissionContract.abi,
-  //       signer
-  //     );
-
-  //     // Fetch permission requests for the current patient
-  //     const patientAddress = await signer.getAddress();
-  //     const requests = await contract.getPermissionRequests(patientAddress);
-
-  //     // Process and set permission requests
-  //     const processedRequests = requests.map((request) => ({
-  //       requester: request.requester,
-  //       dataHash: request.dataHash,
-  //       requestType: request.requestType, // Non-Incentive-Based or Incentive-Based
-  //       timestamp: new Date(request.timestamp.toNumber() * 1000), // Convert to JS Date
-  //       isApproved: request.isApproved,
-  //     }));
-
-  //     setPermissionRequests(processedRequests);
-  //   } catch (error) {
-  //     console.error("Error fetching permission requests:", error);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchPermissionRequests();
-  // }, []);
 
   useEffect(() => {
     // Fetch health records from the blockchain when the component mounts
     fetchHealthRecords();
   }, []); // Run once when the component mounts
+
+//fetching all pending request of the patient
+
+const fetchPermissionRequests = async () => {
+  try {
+    if (typeof window.ethereum === "undefined") {
+      console.error("Ethereum provider is not available. Please install MetaMask or a similar wallet.");
+      return;
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const userPublicKey = await signer.getAddress();
+
+    const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+    const requests = await contract.getPendingRequestsForPatient(userPublicKey);
+ console.log(requests);
+    // Process fetched requests
+    const processedRequests = requests.map((request) => {
+      return {
+        requestId: request.requestId,
+        requester: request.requester,
+        ipfsCid: request.ipfsCid,
+        permissionType: dataTypeMap[Number(request.permissionType)], // Assuming PermissionType is an enum
+        status: statusMap[Number(request.status)], // Assuming a statusMap exists
+        requestDate: Number(request.requestDate),
+        expiryDate: Number(request.expiryDate),
+        incentiveAmount: request.incentiveAmount ? formatEther(request.incentiveAmount) : '0',
+        isIncentiveBased: request.isIncentiveBased,
+      };
+      
+    });
+
+    setPermissionRequests(processedRequests);
+  } catch (error) {
+    console.error("Error fetching permission requests:", error);
+  }
+};
+
+
+
+const handleRequestAction = async (requestId, action) => {
+  try {
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+
+    if (action === "approve") {
+      await contract.approvePermissionRequest(requestId);
+    } else if (action === "decline") {
+      await contract.declinePermissionRequest(requestId);
+    }
+
+    // Refresh the requests after the action
+    fetchPermissionRequests();
+  } catch (error) {
+    console.error(`Error ${action}ing request:`, error);
+  }
+};
+
+useEffect(() => {
+  // Fetch permission requests when the component mounts
+  fetchPermissionRequests();
+}, []);
+
+//
 
   const handleChange = (event, newValue) => {
     setTabValue(newValue);
@@ -216,46 +239,83 @@ const PatientDashboard = () => {
           </Box>
         )}
 
-        {tabValue === 1 && (
-          <TableContainer component={Card} sx={{ boxShadow: 3 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Requester</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                (permissionRequests ? {permissionRequests.map((request) => (
-                  <TableRow key={request.requestId}>
-                    <TableCell>{request.requester}</TableCell>
-                    <TableCell>{request.requestDate}</TableCell>
-                    <TableCell>
-                      {request.isIncentiveBased ? (
-                        <Box display="flex" alignItems="center">
-                          <Chip label={`${request.incentiveAmount}`} color="primary" size="small" />
-                          <Typography ml={1}>Incentive-Based</Typography>
-                        </Box>
-                      ) : (
-                        'Standard Access'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={request.status} color={request.status === 'PENDING' ? 'warning' : 'success'} size="small" />
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="contained" size="small" sx={{ backgroundColor: '#00796b', mr: 1 }}>Approve</Button>
-                      <Button variant="outlined" size="small" color="error">Decline</Button>
-                    </TableCell>
-                  </TableRow>
-                ))})
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+{tabValue === 1 && (
+  <TableContainer>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Requester</TableCell>
+          <TableCell>Request ID</TableCell>
+          <TableCell>IPFS CID</TableCell>
+          <TableCell>Status</TableCell>
+          <TableCell>Request Date</TableCell>
+          <TableCell>Expiry Date</TableCell>
+          <TableCell>Incentive Amount</TableCell>
+          <TableCell>Incentive-Based</TableCell>
+          <TableCell>Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {permissionRequests.map((request) => {
+          return (
+            <TableRow key={request.requestId}>
+              <TableCell>{request.requester}</TableCell> {/* Requester */}
+              <TableCell>{request.requestId}</TableCell> {/* Request ID */}
+              <TableCell>{request.ipfsCid || 'N/A'}</TableCell> {/* IPFS CID */}
+              <TableCell>
+                <Chip
+                  label={request.status}
+                  color={request.status === 'PENDING' ? 'warning' : 'success'}
+                  size="small"
+                />
+              </TableCell> {/* Status */}
+              <TableCell>
+                {request.requestDate 
+                  ? format(new Date(request.requestDate * 1000), 'MM/dd/yyyy') 
+                  : 'Invalid Date'}
+              </TableCell> {/* Request Date */}
+              <TableCell>
+                {request.expiryDate 
+                  ? format(new Date(request.expiryDate * 1000), 'MM/dd/yyyy') 
+                  : 'Invalid Date'}
+              </TableCell> {/* Expiry Date */}
+              <TableCell>
+                {formatEther(request.incentiveAmount)} ETH
+              </TableCell> {/* Incentive Amount */}
+              <TableCell>
+                {request.isIncentiveBased ? 'Yes' : 'No'}
+              </TableCell> {/* Incentive-Based */}
+              <TableCell>
+                {request.status ==="Pending" && (
+                  <>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{ backgroundColor: '#00796b', mr: 1 }}
+                      onClick={() => handleRequestAction(request.requestId, 'approve')}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      onClick={() => handleRequestAction(request.requestId, 'decline')}
+                    >
+                      Decline
+                    </Button>
+                  </>
+                )}
+              </TableCell> {/* Actions */}
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  </TableContainer>
+)}
+
+
 
         <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
           <FileUploader

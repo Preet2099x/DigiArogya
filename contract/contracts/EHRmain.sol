@@ -55,16 +55,17 @@ contract EHRmain {
 
     // Struct for permission requests
     struct PermissionRequest {
-        address requester;
-        address owner;
-        string ipfsCid; // Replaced dataHash with ipfsCid
-        PermissionType permissionType;
-        RequestStatus status;
-        uint256 requestDate;
-        uint256 expiryDate;
-        uint256 incentiveAmount;
-        bool isIncentiveBased;
-    }
+    address requester;
+    address owner;
+    bytes32 requestId;  // Change to bytes32
+    string ipfsCid;
+    PermissionType permissionType;
+    RequestStatus status;
+    uint256 requestDate;
+    uint256 expiryDate;
+    uint incentiveAmount;
+    bool isIncentiveBased;
+}
 
     // Struct to hold public and private keys
     struct KeyPair {
@@ -75,7 +76,7 @@ contract EHRmain {
     // State variables
     mapping(address => User) public users;
     mapping(string => HealthRecord) public healthRecords; // Changed data type from bytes32 to string
-    mapping(string => PermissionRequest) public permissionRequests; // Changed data type from bytes32 to string
+    mapping(bytes32 => PermissionRequest) public permissionRequests; // Changed data type from bytes32 to string
     mapping(address => mapping(string => mapping(address => bool)))
         public permissions;
 
@@ -90,6 +91,7 @@ contract EHRmain {
     uint256 public totalUsers;
     uint256 public totalRecords;
     uint256 public totalRequests;
+    bytes32[] public permissionRequestIds; // Array to keep track of keys (ids)
 
     // Events
     event UserRegistered(address indexed userAddress, Role role);
@@ -99,12 +101,12 @@ contract EHRmain {
         DataType dataType
     );
     event PermissionRequested(
-        string indexed requestId,
+        bytes32 requestId,
         address indexed requester,
         address indexed owner
     );
     event PermissionGranted(
-        string indexed requestId,
+        bytes32 requestId,
         address indexed requester,
         address indexed owner
     );
@@ -277,36 +279,38 @@ contract EHRmain {
         address _owner,
         string memory _ipfsCid,
         PermissionType _permissionType
-    ) external recordExists(_ipfsCid) returns (string memory) {
+    ) external recordExists(_ipfsCid) returns (bytes32) {
         require(_owner != address(0), "Invalid owner address");
         require(
             _permissionType != PermissionType.NONE,
             "Invalid permission type"
         );
         require(
-            keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) ==
+            keccak256(abi.encodePacked(healthRecords[_ipfsCid].owner)) == 
                 keccak256(abi.encodePacked(_owner)),
             "Invalid record owner"
         );
 
-        string memory requestId = string(
+        bytes32 requestId = keccak256(
             abi.encodePacked(msg.sender, _owner, _ipfsCid, block.timestamp)
         );
 
         permissionRequests[requestId] = PermissionRequest({
-            requester: msg.sender,
-            owner: _owner,
-            ipfsCid: _ipfsCid,
-            permissionType: _permissionType,
-            status: RequestStatus.PENDING,
-            requestDate: block.timestamp,
-            expiryDate: block.timestamp + 30 days,
-            incentiveAmount: 0,
-            isIncentiveBased: false
-        });
+    requester: msg.sender,
+    owner: _owner,
+    requestId: requestId,  // Store as bytes32
+    ipfsCid: _ipfsCid,
+    permissionType: _permissionType,
+    status: RequestStatus.PENDING,
+    requestDate: block.timestamp,
+    expiryDate: block.timestamp + 30 days,
+    incentiveAmount: 0,
+    isIncentiveBased: false
+         });
 
         totalRequests++;
         emit PermissionRequested(requestId, msg.sender, _owner);
+        permissionRequestIds.push(requestId);
         return requestId;
     }
 
@@ -314,7 +318,7 @@ contract EHRmain {
         address _owner,
         string memory _ipfsCid,
         PermissionType _permissionType
-    ) external payable recordExists(_ipfsCid) returns (string memory) {
+    ) external payable recordExists(_ipfsCid) returns (bytes32) {
         require(_owner != address(0), "Invalid owner address");
         require(
             _permissionType != PermissionType.NONE,
@@ -327,35 +331,71 @@ contract EHRmain {
             "Invalid record owner"
         );
 
-        string memory requestId = string(
-            abi.encodePacked(
-                msg.sender,
-                _owner,
-                _ipfsCid,
-                block.timestamp,
-                msg.value
-            )
+       bytes32 requestId = keccak256(
+            abi.encodePacked(msg.sender, _owner, _ipfsCid, block.timestamp)
         );
 
         permissionRequests[requestId] = PermissionRequest({
-            requester: msg.sender,
-            owner: _owner,
-            ipfsCid: _ipfsCid,
-            permissionType: _permissionType,
-            status: RequestStatus.PENDING,
-            requestDate: block.timestamp,
-            expiryDate: block.timestamp + 30 days,
-            incentiveAmount: msg.value,
-            isIncentiveBased: true
-        });
+    requester: msg.sender,
+    owner: _owner,
+    requestId: requestId,  // Store as bytes32
+    ipfsCid: _ipfsCid,
+    permissionType: _permissionType,
+    status: RequestStatus.PENDING,
+    requestDate: block.timestamp,
+    expiryDate: block.timestamp + 30 days,
+    incentiveAmount: 0,
+    isIncentiveBased: true
+         });
 
         totalRequests++;
         emit PermissionRequested(requestId, msg.sender, _owner);
+        permissionRequestIds.push(requestId);
         return requestId;
     }
 
+
+    function getPendingRequestsForPatient(
+    address patient
+    ) external view returns (PermissionRequest[] memory) {
+    uint256 count = 0;
+
+    // Count how many requests are pending for the patient
+    for (uint256 i = 0; i < permissionRequestIds.length; i++) {
+        bytes32 requestId = permissionRequestIds[i];
+        PermissionRequest storage request = permissionRequests[requestId];
+
+        if (
+            request.owner == patient &&
+            request.status == RequestStatus.PENDING
+        ) {
+            count++;
+        }
+    }
+
+    // Create an array to hold the pending requests
+    PermissionRequest[] memory pendingRequests = new PermissionRequest[](count);
+    uint256 index = 0;
+
+    for (uint256 i = 0; i < permissionRequestIds.length; i++) {
+        bytes32 requestId = permissionRequestIds[i];
+        PermissionRequest storage request = permissionRequests[requestId];
+
+        if (
+            request.owner == patient &&
+            request.status == RequestStatus.PENDING
+        ) {
+            pendingRequests[index] = request;
+            index++;
+        }
+    }
+
+    return pendingRequests;
+   }
+
+
     function approvePermission(
-        string memory _requestId,
+        bytes32 _requestId,
         string memory _encryptedSymmetricKey // Added encrypted symmetric key as parameter
     ) external returns (bool) {
         PermissionRequest storage request = permissionRequests[_requestId];
