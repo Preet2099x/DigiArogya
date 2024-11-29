@@ -64,8 +64,8 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
 
             if (userRole === 'Patient') {
                 console.log('Uploading as Patient...');
-                const encryptedSymmetricKey = "b2f7e1dcb5a785d6a17a473b2c8d0809ef9a60442ed9f50c8e96d5194c7f9b0f";
-                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, symmetricKey);
+                // const encryptedSymmetricKey = ;
+                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, encryptedSymmetricKey);
                 console.log(createTxn);
             }
             if (userRole === 'Provider') {

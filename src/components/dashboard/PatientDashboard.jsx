@@ -53,7 +53,7 @@ const PatientDashboard = () => {
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
 
       // Fetch records using the user's address
-      const records = await contract.getHealthRecordsByOwner(userPublicKey);
+      const records = await contract.getHealthRecordsByOwner(userPublicKey); 
 
       // Update state with the fetched records directly from the blockchain
       const fetchedRecords = records.map((record) => ({

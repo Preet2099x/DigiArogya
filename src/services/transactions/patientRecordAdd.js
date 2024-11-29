@@ -12,7 +12,7 @@ export async function addPatientRecord(userPublicKey, dataType, uploadedData, si
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     const dataTypeEnum = getDataTypeEnum(dataType);
     const tx = await contract.addPHRData(uploadedData.ipfsHash, dataTypeEnum, encryptedSymmetricKey, {
-        gasLimit: 500000
+        gasLimit: 1000000
     });
     await tx.wait();
     onUpload({ ...uploadedData, dataType, publicKey: userPublicKey, signature });
