@@ -9,12 +9,13 @@ import DoctorDashboard from './components/dashboard/DoctorDashboard';
 import ResearcherDashboard from './components/dashboard/ResearcherDashboard';
 import PatientDashboard from './components/dashboard/PatientDashboard';
 import AdminLogin from "./pages/auth/AdminLogin"
+import LandingPage from './pages/landingPage/LandingPage';
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin/login" element={<AdminLogin />} />
