@@ -46,8 +46,7 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
             const symmetricKey = CryptoJS.lib.WordArray.random(32).toString();
             console.log('Symmetric key:', symmetricKey);
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
-            const base64EncryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
-            const encryptedSymmetricKey = Buffer.from(base64EncryptedSymmetricKey, 'base64').toString('hex');
+            const encryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
             console.log(`Encrypted Symmetric Key from File Uploader is ${encryptedSymmetricKey}`);
             const formData = new FormData();
             const fileBlob = new Blob([JSON.stringify({
@@ -64,7 +63,6 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
 
             if (userRole === 'Patient') {
                 console.log('Uploading as Patient...');
-                // const encryptedSymmetricKey = ;
                 const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, encryptedSymmetricKey);
                 console.log(createTxn);
             }

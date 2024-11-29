@@ -3,11 +3,10 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { Download, Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
-
 import { Buffer } from 'buffer';
+import { decryptWithPrivateKey } from '../../services/cryptography/asymmetricEncryption';
 import decryptBase64ToFile from '../../services/cryptography/fileDecrypter';
 import { downloadFromIPFS } from '../../services/ipfs/ipfsDownloader';
-import { decryptWithPrivateKey } from '../../services/cryptography/asymmetricEncryption';
 
 window.Buffer = window.Buffer || Buffer;
 
@@ -28,6 +27,7 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
         try {
             console.log(`Encrypted Symmetric Key: ${encryptedSymmetricKey}`);
             console.log('Starting download process...');
+            console.log(`Private Key for Decryption: ${privateKeyForDecryption}`);
             const decryptedSymmetricKey = await decryptWithPrivateKey(privateKeyForDecryption, encryptedSymmetricKey);
             console.log(`Decrypted Symmetric Key: ${decryptedSymmetricKey}`);
             const { encryptedContent, fileType, fileName } = await downloadFromIPFS(ipfsHash);

@@ -5,14 +5,6 @@ export async function encryptSymmetricKey(symmetricKey, publicKeyForEncryption) 
     }
 
     try {
-        // const publicKeyBuffer = await window.crypto.subtle.exportKey(
-        //     "spki",
-        //     publicKeyForEncryption
-        // );
-
-        // const publicKeyBase64 = btoa(
-        //     String.fromCharCode(...new Uint8Array(publicKeyBuffer))
-        // );
 
         console.log("User's Public Key (Base64):", publicKeyForEncryption);
 
@@ -50,29 +42,49 @@ export async function encryptWithPublicKey(publicKeyBase64, symmetricKey) {
 
     return btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)));
 }
-
 export async function decryptWithPrivateKey(privateKeyBase64, encryptedSymmetricKey) {
-    const privateKeyBuffer = Uint8Array.from(atob(privateKeyBase64), (c) => c.charCodeAt(0));
+    try {
+        const privateKeyBuffer = Uint8Array.from(atob(privateKeyBase64), (c) => c.charCodeAt(0));
 
-    const cryptoKey = await window.crypto.subtle.importKey(
-        "pkcs8",
-        privateKeyBuffer,
-        {
-            name: "RSA-OAEP",
-            hash: "SHA-256",
-        },
-        false,
-        ["decrypt"]
-    );
+        const cryptoKey = await window.crypto.subtle.importKey(
+            "pkcs8",
+            privateKeyBuffer,
+            {
+                name: "RSA-OAEP",
+                hash: {
+                    name: "SHA-256"
+                }
+            },
+            false,
+            ["decrypt"]
+        );
 
-    const encryptedBuffer = Uint8Array.from(atob(encryptedSymmetricKey), (c) => c.charCodeAt(0));
+        const encryptedBuffer = Uint8Array.from(atob(encryptedSymmetricKey), (c) => c.charCodeAt(0));
 
-    const decryptedSymmetricKey = await window.crypto.subtle.decrypt(
-        { name: "RSA-OAEP" },
-        cryptoKey,
-        encryptedBuffer
-    );
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+            {
+                name: "RSA-OAEP",
+                hash: {
+                    name: "SHA-256"
+                }
+            },
+            cryptoKey,
+            encryptedBuffer
+        );
 
-    const decoder = new TextDecoder();
-    return decoder.decode(decryptedSymmetricKey);
+        const decoder = new TextDecoder();
+        return decoder.decode(decryptedBuffer);
+    } catch (error) {
+        console.error("Decryption failed:", error);
+
+        if (error instanceof DOMException) {
+            console.error("DOM Exception Details:", {
+                name: error.name,
+                message: error.message,
+                code: error.code
+            });
+        }
+
+        return null;
+    }
 }

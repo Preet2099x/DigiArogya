@@ -110,15 +110,8 @@ const Register = () => {
         throw new Error("Contract function registerUser not found");
       }
 
-      const keyPair = await generateAndExportKeys();
-      const publicKeyBuffer = await window.crypto.subtle.exportKey(
-        "spki",
-        keyPair.publicKey
-      );
+      const { publicKeyBase64, privateKeyBase64, keyPair } = await generateAndExportKeys();
 
-      const publicKeyBase64 = btoa(
-        String.fromCharCode(...new Uint8Array(publicKeyBuffer))
-      );
 
       console.log("User's Public Key (Base64):", publicKeyBase64);
       if (publicKeyBase64)
@@ -126,14 +119,6 @@ const Register = () => {
       const tx = await contract.registerUser(roleValue, publicKeyHash, publicKeyBase64);
       await tx.wait();
 
-      const privateKeyBuffer = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        keyPair.privateKey
-      );
-
-      const privateKeyBase64 = btoa(
-        String.fromCharCode(...new Uint8Array(privateKeyBuffer))
-      );
       const privateKeyBlob = new Blob([privateKeyBase64], { type: 'text/plain' });
       const downloadUrl = URL.createObjectURL(privateKeyBlob);
       const downloadLink = document.createElement('a');
