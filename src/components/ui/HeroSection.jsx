@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import image1 from './image1.png';
-import image2 from './image2.png';
+import image1 from '../../assets/image1.png';
+import image2 from '../../assets/image2.png';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+
   const images = [
     { doctor: image1, patient: image2 },
     { doctor: image2, patient: image1 }
@@ -13,13 +15,13 @@ const HeroSection = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => 
+      setCurrentImageIndex((prevIndex) =>
         (prevIndex + 1) % images.length
       );
     }, 3000);
 
     return () => clearInterval(interval);
-  }, );
+  },);
 
   const currentImages = images[currentImageIndex];
 
@@ -28,9 +30,9 @@ const HeroSection = () => {
       bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 
       animate-gradient-x p-8 relative overflow-hidden">
       {/* Advanced Animated Gradient Backgrounds */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ 
+        animate={{
           opacity: [0.2, 0.4, 0.2],
           scale: [1, 1.05, 1],
         }}
@@ -47,29 +49,29 @@ const HeroSection = () => {
 
       {/* Color Flowing Particles */}
       {[...Array(20)].map((_, i) => (
-        <motion.div 
+        <motion.div
           key={i}
-          initial={{ 
+          initial={{
             opacity: 0,
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight
           }}
-          animate={{ 
+          animate={{
             opacity: [0, 0.5, 0],
             x: [
-              Math.random() * window.innerWidth, 
-              Math.random() * window.innerWidth, 
+              Math.random() * window.innerWidth,
+              Math.random() * window.innerWidth,
               Math.random() * window.innerWidth
             ],
             y: [
-              Math.random() * window.innerHeight, 
-              Math.random() * window.innerHeight, 
+              Math.random() * window.innerHeight,
+              Math.random() * window.innerHeight,
               Math.random() * window.innerHeight
             ],
             scale: [0.5, 1, 0.5],
             backgroundColor: [
-              'rgba(59, 130, 246, 0.2)', 
-              'rgba(124, 58, 237, 0.3)', 
+              'rgba(59, 130, 246, 0.2)',
+              'rgba(124, 58, 237, 0.3)',
               'rgba(244, 63, 94, 0.2)'
             ]
           }}
@@ -87,20 +89,20 @@ const HeroSection = () => {
       ))}
 
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ 
-            duration: 0.8, 
-            type: "spring", 
-            stiffness: 70 
+          transition={{
+            duration: 0.8,
+            type: "spring",
+            stiffness: 70
           }}
           className="text-center md:text-left space-y-6"
         >
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: 1, 
+            animate={{
+              opacity: 1,
               y: 0,
               textShadow: [
                 '0 0 5px rgba(59, 130, 246, 0.3)',
@@ -123,13 +125,14 @@ const HeroSection = () => {
             bg-gradient-to-r from-gray-800 via-gray-700 to-gray-900 
             bg-clip-text text-transparent
             leading-relaxed tracking-wide">
-            Revolutionizing healthcare management with intelligent, 
+            Revolutionizing healthcare management with intelligent,
             intuitive digital solutions that empower medical professionals.
           </p>
           <div className="flex justify-center md:justify-start space-x-4">
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/login')}
               className="px-10 py-4 
                 bg-gradient-to-r from-blue-600 via-purple-700 to-pink-600 
                 text-white rounded-full 
@@ -143,7 +146,7 @@ const HeroSection = () => {
               <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></span>
               Get Started
             </motion.button>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-10 py-4 
@@ -158,11 +161,11 @@ const HeroSection = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           key={currentImageIndex}
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
-            opacity: 1, 
+          animate={{
+            opacity: 1,
             scale: 1,
             boxShadow: [
               '0 25px 50px -12px rgba(59, 130, 246, 0.2)',
@@ -170,7 +173,7 @@ const HeroSection = () => {
               '0 25px 50px -12px rgba(59, 130, 246, 0.2)'
             ]
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
             repeatType: "reverse"
@@ -185,8 +188,8 @@ const HeroSection = () => {
               border border-gray-100 
               transition-all duration-300 
               group-hover:shadow-3xl">
-              <svg 
-                className="w-full h-auto rounded-xl" 
+              <svg
+                className="w-full h-auto rounded-xl"
                 viewBox="0 0 400 500"
               >
                 <defs>
@@ -195,22 +198,22 @@ const HeroSection = () => {
                     <stop offset="100%" stopColor="rgba(124,58,237,0.2)" />
                   </linearGradient>
                   <clipPath id="doctorClip">
-                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20"/>
+                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20" />
                   </clipPath>
                 </defs>
-                <image 
+                <image
                   href={currentImages.doctor}
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
+                  x="0" y="0"
+                  width="400"
+                  height="500"
                   clipPath="url(#doctorClip)"
                   preserveAspectRatio="cover"
                 />
-                <rect 
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
-                  fill="url(#imageOverlay)" 
+                <rect
+                  x="0" y="0"
+                  width="400"
+                  height="500"
+                  fill="url(#imageOverlay)"
                   clipPath="url(#doctorClip)"
                 />
               </svg>
@@ -224,8 +227,8 @@ const HeroSection = () => {
               border border-gray-100 
               transition-all duration-300 
               group-hover:shadow-3xl">
-              <svg 
-                className="w-full h-auto rounded-xl" 
+              <svg
+                className="w-full h-auto rounded-xl"
                 viewBox="0 0 400 500"
               >
                 <defs>
@@ -234,22 +237,22 @@ const HeroSection = () => {
                     <stop offset="100%" stopColor="rgba(244,63,94,0.2)" />
                   </linearGradient>
                   <clipPath id="patientClip">
-                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20"/>
+                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20" />
                   </clipPath>
                 </defs>
-                <image 
+                <image
                   href={currentImages.patient}
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
+                  x="0" y="0"
+                  width="400"
+                  height="500"
                   clipPath="url(#patientClip)"
                   preserveAspectRatio="cover"
                 />
-                <rect 
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
-                  fill="url(#imageOverlay2)" 
+                <rect
+                  x="0" y="0"
+                  width="400"
+                  height="500"
+                  fill="url(#imageOverlay2)"
                   clipPath="url(#patientClip)"
                 />
               </svg>

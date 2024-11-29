@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from 'framer-motion';
-import problemImage from "../assets/problem3.png";
+import problemImage from "../../assets/problem.png";
 
 const ProblemStatement = () => {
   const problemItems = [
@@ -14,9 +14,9 @@ const ProblemStatement = () => {
     <div className="min-h-screen flex items-center justify-center 
       bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 
       animate-gradient-x p-8 relative overflow-hidden">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ 
+        animate={{
           opacity: [0.2, 0.4, 0.2],
           scale: [1, 1.05, 1],
         }}
@@ -32,29 +32,29 @@ const ProblemStatement = () => {
       />
 
       {[...Array(20)].map((_, i) => (
-        <motion.div 
+        <motion.div
           key={i}
-          initial={{ 
+          initial={{
             opacity: 0,
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight
           }}
-          animate={{ 
+          animate={{
             opacity: [0, 0.5, 0],
             x: [
-              Math.random() * window.innerWidth, 
-              Math.random() * window.innerWidth, 
+              Math.random() * window.innerWidth,
+              Math.random() * window.innerWidth,
               Math.random() * window.innerWidth
             ],
             y: [
-              Math.random() * window.innerHeight, 
-              Math.random() * window.innerHeight, 
+              Math.random() * window.innerHeight,
+              Math.random() * window.innerHeight,
               Math.random() * window.innerHeight
             ],
             scale: [0.5, 1, 0.5],
             backgroundColor: [
-              'rgba(59, 130, 246, 0.2)', 
-              'rgba(124, 58, 237, 0.3)', 
+              'rgba(59, 130, 246, 0.2)',
+              'rgba(124, 58, 237, 0.3)',
               'rgba(244, 63, 94, 0.2)'
             ]
           }}
@@ -72,20 +72,20 @@ const ProblemStatement = () => {
       ))}
 
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ 
-            duration: 0.8, 
-            type: "spring", 
-            stiffness: 70 
+          transition={{
+            duration: 0.8,
+            type: "spring",
+            stiffness: 70
           }}
           className="text-center md:text-left space-y-6"
         >
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: 1, 
+            animate={{
+              opacity: 1,
               y: 0,
               textShadow: [
                 '0 0 5px rgba(59, 130, 246, 0.3)',
@@ -106,7 +106,7 @@ const ProblemStatement = () => {
           </motion.h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 text-center">
             {problemItems.map((item, index) => (
-              <motion.div 
+              <motion.div
                 key={index}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -121,10 +121,10 @@ const ProblemStatement = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
-            opacity: 1, 
+          animate={{
+            opacity: 1,
             scale: 1,
             boxShadow: [
               '0 25px 50px -12px rgba(59, 130, 246, 0.2)',
@@ -132,7 +132,7 @@ const ProblemStatement = () => {
               '0 25px 50px -12px rgba(59, 130, 246, 0.2)'
             ]
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
             repeatType: "reverse"
@@ -146,8 +146,8 @@ const ProblemStatement = () => {
               border border-gray-100 
               transition-all duration-300 
               group-hover:shadow-3xl">
-              <svg 
-                className="w-full h-auto rounded-xl" 
+              <svg
+                className="w-full h-auto rounded-xl"
                 viewBox="0 0 400 500"
               >
                 <defs>
@@ -156,22 +156,22 @@ const ProblemStatement = () => {
                     <stop offset="100%" stopColor="rgba(124,58,237,0.2)" />
                   </linearGradient>
                   <clipPath id="problemClip">
-                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20"/>
+                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20" />
                   </clipPath>
                 </defs>
-                <image 
+                <image
                   href={problemImage}
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
+                  x="0" y="0"
+                  width="400"
+                  height="500"
                   clipPath="url(#problemClip)"
                   preserveAspectRatio="cover"
                 />
-                <rect 
-                  x="0" y="0" 
-                  width="400" 
-                  height="500" 
-                  fill="url(#imageOverlay)" 
+                <rect
+                  x="0" y="0"
+                  width="400"
+                  height="500"
+                  fill="url(#imageOverlay)"
                   clipPath="url(#problemClip)"
                 />
               </svg>
