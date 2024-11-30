@@ -69,7 +69,6 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
             if (userRole === 'Provider') {
                 console.log('Uploading as Provider...');
 
-                const encryptedSymmetricKey = "b2f7e1dcb5a785d6a17a473b2c8d0809ef9a60442ed9f50c8e96d5194c7f9b0f";
                 const createTxn = await addElectronicHealthRecord(userPublicKey, patientAddress, dataType, uploadResponse, encryptedSymmetricKey, signer, contractAddress, contractABI.abi, onUpload);
                 console.log(createTxn);
             }
