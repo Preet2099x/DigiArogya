@@ -431,6 +431,18 @@ async function getRecordsByCareProvider() {
       </Alert>
     </Snackbar>
 
+    <Dialog
+          open={openDownloadDialog}
+          onClose={() => handleDownloadDialog(false)}
+        >
+          <FileDownloader
+            onClose={() => handleDownloadDialog(false)}
+            ipfsHash={hashForDownload}
+            encryptedSymmetricKey={encryptedSymmetricKey}
+          />
+        </Dialog>
+    
+
   </Box>
 </Box>
 
