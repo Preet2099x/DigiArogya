@@ -1,186 +1,57 @@
 import React from "react";
-import { motion } from 'framer-motion';
-import problemImage from "../../assets/problem.png";
+import { motion } from "framer-motion";
+import { AlertTriangle, Shield, Database, Lock } from 'lucide-react';
+import { Card, CardContent, Typography } from "@mui/material";
 
 const ProblemStatement = () => {
   const problemItems = [
-    { icon: '⚠️', title: 'Centralized Vulnerability' },
-    { icon: '👁️', title: 'Privacy Risks' },
-    { icon: '🔄', title: 'Lack of Interoperability' },
-    { icon: '📤', title: 'Insecure Sharing' }
+    { icon: <Database />, title: "Centralized Vulnerability", description: "Single point of failure increases risk of data breaches." },
+    { icon: <Shield />, title: "Privacy Risks", description: "Patient data vulnerable to exposure and mishandling." },
+    { icon: <AlertTriangle />, title: "Lack of Interoperability", description: "Limited data exchange capabilities between healthcare systems." },
+    { icon: <Lock />, title: "Insecure Sharing", description: "Inadequate security measures in EHR data sharing." },
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center 
-      bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 
-      animate-gradient-x p-8 relative overflow-hidden">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{
-          opacity: [0.2, 0.4, 0.2],
-          scale: [1, 1.05, 1],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          repeatType: "loop",
-          ease: "easeInOut"
-        }}
-        className="absolute inset-0 
-          bg-gradient-to-tr from-blue-100/30 via-purple-100/30 to-pink-100/30 
-          opacity-30 blur-3xl pointer-events-none"
-      />
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
 
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          initial={{
-            opacity: 0,
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight
-          }}
-          animate={{
-            opacity: [0, 0.5, 0],
-            x: [
-              Math.random() * window.innerWidth,
-              Math.random() * window.innerWidth,
-              Math.random() * window.innerWidth
-            ],
-            y: [
-              Math.random() * window.innerHeight,
-              Math.random() * window.innerHeight,
-              Math.random() * window.innerHeight
-            ],
-            scale: [0.5, 1, 0.5],
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.2)',
-              'rgba(124, 58, 237, 0.3)',
-              'rgba(244, 63, 94, 0.2)'
-            ]
-          }}
-          transition={{
-            duration: Math.random() * 10 + 5,
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut"
-          }}
-          className="absolute rounded-full 
-            w-4 h-4 
-            bg-opacity-20 
-            blur-xl"
-        />
-      ))}
-
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{
-            duration: 0.8,
-            type: "spring",
-            stiffness: 70
-          }}
-          className="text-center md:text-left space-y-6"
+      <div className="container mx-auto relative z-10 max-w-5xl">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-3xl md:text-4xl font-bold text-center text-purple-900 mb-16 -mt-8"
         >
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              textShadow: [
-                '0 0 5px rgba(59, 130, 246, 0.3)',
-                '0 0 10px rgba(124, 58, 237, 0.3)',
-                '0 0 5px rgba(59, 130, 246, 0.3)'
-              ]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            className="text-6xl font-extrabold mb-6 
-              bg-clip-text text-transparent 
-              bg-gradient-to-r from-blue-700 via-purple-700 to-pink-600"
-          >
-            Problem with Traditional EHR
-          </motion.h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 text-center">
-            {problemItems.map((item, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-4 bg-white/10 backdrop-blur-sm rounded-xl 
-                  border border-gray-300 
-                  hover:shadow-xl transition duration-300"
-              >
-                <span className="text-4xl block mb-4">{item.icon}</span>
-                <p className="text-gray-700 font-semibold">{item.title}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+          Problems with Traditional EHR
+        </motion.h2>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-            boxShadow: [
-              '0 25px 50px -12px rgba(59, 130, 246, 0.2)',
-              '0 25px 50px -12px rgba(124, 58, 237, 0.2)',
-              '0 25px 50px -12px rgba(59, 130, 246, 0.2)'
-            ]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-          className="flex justify-center items-center w-full"
-        >
-          <div className="relative group w-full max-w-sm mx-auto 
-            transform transition-transform duration-300 
-            hover:-translate-y-4 hover:scale-[1.02]">
-            <div className="bg-white rounded-2xl p-4 shadow-2xl 
-              border border-gray-100 
-              transition-all duration-300 
-              group-hover:shadow-3xl">
-              <svg
-                className="w-full h-auto rounded-xl"
-                viewBox="0 0 400 500"
-              >
-                <defs>
-                  <linearGradient id="imageOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(59,130,246,0.2)" />
-                    <stop offset="100%" stopColor="rgba(124,58,237,0.2)" />
-                  </linearGradient>
-                  <clipPath id="problemClip">
-                    <rect x="0" y="0" width="400" height="500" rx="20" ry="20" />
-                  </clipPath>
-                </defs>
-                <image
-                  href={problemImage}
-                  x="0" y="0"
-                  width="400"
-                  height="500"
-                  clipPath="url(#problemClip)"
-                  preserveAspectRatio="cover"
-                />
-                <rect
-                  x="0" y="0"
-                  width="400"
-                  height="500"
-                  fill="url(#imageOverlay)"
-                  clipPath="url(#problemClip)"
-                />
-              </svg>
-            </div>
-          </div>
-        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
+          {problemItems.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="h-full bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
+                <CardContent className="flex flex-col items-center text-center p-6">
+                  <div className="p-3 bg-purple-100 rounded-full mb-4">
+                    {React.cloneElement(item.icon, { className: "w-8 h-8 text-red-500" })}
+                  </div>
+                  <Typography variant="h6" component="h3" className="text-gray-900 mb-2">
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" className="text-gray-600">
+                    {item.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
 export default ProblemStatement;
+
