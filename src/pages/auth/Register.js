@@ -136,7 +136,7 @@ const Register = () => {
 
       // Delay navigation slightly to allow toast to be seen
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 2000);
 
     } catch (error) {
