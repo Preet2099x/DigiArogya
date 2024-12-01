@@ -14,3 +14,21 @@ export const getDataTypeEnum = (dataType) => {
             return 1;
     }
 };
+
+export const getDataTypeName = (dataType) => {
+    switch (dataType) {
+        case 0:
+            return 'EHR';
+        case 1:
+            return 'PHR';
+        case 'LAB_RESULT':
+            return 'LAB_RESULT';
+        case 3:
+            return 'PRESCRIPTION';
+        case 4:
+            return 'IMAGING';
+        default:
+            return 'NA';
+    }
+};
+

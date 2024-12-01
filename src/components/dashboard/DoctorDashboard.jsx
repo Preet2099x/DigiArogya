@@ -26,6 +26,8 @@ import LogoutButton from '../ui/LogoutButton';
 import { BrowserProvider, ethers,formatEther } from 'ethers';
 import contractABI from '../../contractABI.json';
 import FileDownloader from '../files/FileDownloader';
+import { format } from "date-fns"; 
+import { getDataTypeName } from '../../utils/getDataType';
 //new
 
 const DoctorDashboard = () => {
@@ -290,6 +292,58 @@ async function getRecordsByCareProvider() {
             </Box>
           </CardContent>
         </Card>
+         {/* Request Form */}
+    <Box sx={{ mt: 4 }}>
+      <Typography variant="h6" fontWeight="bold">Make Permission Request</Typography>
+      <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <TextField
+          label="Owner Address"
+          variant="outlined"
+          fullWidth
+          value={ownerAddress}
+          onChange={(e) => setOwnerAddress(e.target.value)}
+        />
+        <TextField
+          label="IPFS CID"
+          variant="outlined"
+          fullWidth
+          value={ipfsCid}
+          onChange={(e) => setIpfsCid(e.target.value)}
+        />
+        <TextField
+          label="Permission Type"
+          variant="outlined"
+          fullWidth
+          value={permissionType}
+          onChange={(e) => setPermissionType(e.target.value)}
+        />
+        {/* <TextField
+          label="Incentive Amount (Ether)"
+          variant="outlined"
+          fullWidth
+          value={incentiveAmount}
+          onChange={(e) => setIncentiveAmount(e.target.value)}
+          disabled={permissionType !== "IncentiveBased"} // Disable if not incentive-based
+        /> */}
+        <Button
+          variant="contained"
+          sx={{ mt: 2, backgroundColor: '#00796b' }}
+          onClick={permissionType === "IncentiveBased" ? handleNonIncentiveBasedRequest : handleNonIncentiveBasedRequest}
+        >
+          Submit Request
+        </Button>
+        <Dialog
+          open={openDownloadDialog}
+          onClose={() => handleDownloadDialog(false)}
+        >
+          <FileDownloader
+            onClose={() => handleDownloadDialog(false)}
+            ipfsHash={hashForDownload}
+            encryptedSymmetricKey={encryptedSymmetricKey}
+          />
+        </Dialog>
+      </Box>
+    </Box>
       </Box>
     )}
 
@@ -311,9 +365,15 @@ async function getRecordsByCareProvider() {
                 {accessibleRecords.map((record) => (
                   <tr key={record.dataHash} style={{ borderBottom: '1px solid #e0e0e0' }}>
                     <td style={{ padding: '12px' }}>{record[0]}</td>
-                    <td style={{ padding: '12px' }}>{Number(record[3])}</td>
-                    <td style={{ padding: '12px' }}>{Number(record[5])}</td>
-                    <td style={{ padding: '12px' }}>{Number(record[6])}</td>
+                    <td style={{ padding: '12px' }}>{getDataTypeName(Number(record[3]))}</td>
+                    <td style={{ padding: '12px' }}>{format(
+                              new Date(Number(record[5])* 1000),
+                              "MM/dd/yyyy"
+                            )}</td>
+                    <td style={{ padding: '12px' }}>{format(
+                              new Date(Number(record[6])* 1000),
+                              "MM/dd/yyyy"
+                            )}</td>
                     <td style={{ padding: '12px' }}>
                       <Button variant="outlined" size="small" sx={{ marginRight: 1 }}  onClick={() => {
                             handleDownloadDialog(true);
@@ -371,58 +431,6 @@ async function getRecordsByCareProvider() {
       </Alert>
     </Snackbar>
 
-    {/* Request Form */}
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h6" fontWeight="bold">Make Permission Request</Typography>
-      <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField
-          label="Owner Address"
-          variant="outlined"
-          fullWidth
-          value={ownerAddress}
-          onChange={(e) => setOwnerAddress(e.target.value)}
-        />
-        <TextField
-          label="IPFS CID"
-          variant="outlined"
-          fullWidth
-          value={ipfsCid}
-          onChange={(e) => setIpfsCid(e.target.value)}
-        />
-        <TextField
-          label="Permission Type"
-          variant="outlined"
-          fullWidth
-          value={permissionType}
-          onChange={(e) => setPermissionType(e.target.value)}
-        />
-        {/* <TextField
-          label="Incentive Amount (Ether)"
-          variant="outlined"
-          fullWidth
-          value={incentiveAmount}
-          onChange={(e) => setIncentiveAmount(e.target.value)}
-          disabled={permissionType !== "IncentiveBased"} // Disable if not incentive-based
-        /> */}
-        <Button
-          variant="contained"
-          sx={{ mt: 2, backgroundColor: '#00796b' }}
-          onClick={permissionType === "IncentiveBased" ? handleNonIncentiveBasedRequest : handleNonIncentiveBasedRequest}
-        >
-          Submit Request
-        </Button>
-        <Dialog
-          open={openDownloadDialog}
-          onClose={() => handleDownloadDialog(false)}
-        >
-          <FileDownloader
-            onClose={() => handleDownloadDialog(false)}
-            ipfsHash={hashForDownload}
-            encryptedSymmetricKey={encryptedSymmetricKey}
-          />
-        </Dialog>
-      </Box>
-    </Box>
   </Box>
 </Box>
 

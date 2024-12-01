@@ -541,8 +541,7 @@ contract EHRmain {
     }
 
     function getRecordsByCareProvider(
-        address _careProvider,
-        address ownerAddress
+        address _careProvider
     ) public view returns (approvedRecords[] memory) {
         require(_careProvider != address(0), "Invalid care provider address");
         // require(careProviderRecords[_careProvider])
