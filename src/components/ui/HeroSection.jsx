@@ -3,8 +3,10 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Shield, Lock, Database } from 'lucide-react'
 import { Button } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 
 export default function HeroSection() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100">
       {/* Animated background elements */}
@@ -66,6 +68,7 @@ export default function HeroSection() {
           >
             <Button
               variant="contained"
+              onClick={() => navigate('/register')}
               endIcon={<ArrowRight className="w-4 h-4" />}
               sx={{
                 backgroundColor: '#4C1D95',

@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import contractABI from '../../contractABI.json';
 import { generateAndExportKeys } from '../../services/cryptography/keyPairGenerator';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -152,50 +154,81 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-300">
-      <div className="max-w-md w-full bg-white p-8 rounded shadow">
-        <h1 className="text-2xl font-bold mb-4">Register</h1>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Choose your role</option>
-            <option value="PATIENT">Patient</option>
-            <option value="PROVIDER">Provider</option>
-            <option value="RESEARCHER">Researcher</option>
-          </select>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Public Key Hash</label>
-            <input
-              type="text"
-              name="publicKeyHash"
-              value={formData.publicKeyHash}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-              readOnly
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-            disabled={loading}
-          >
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-        <button
-          onClick={handleLoginRedirect}
-          className="w-full px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+    <div>
+      <div className="flex flex-col md:flex-row min-h-screen">
+        <motion.button
+          className="absolute top-4 left-4 p-2 rounded-full hover:bg-blue-700 transition-colors"
+          onClick={() => navigate('/')}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
         >
-          Move to Login
-        </button>
-        {loading && <p className="text-center text-blue-500 mt-4">Processing...</p>}
+          <ArrowLeft className="h-6 w-6 text-white" />
+        </motion.button>
+        {/* Left Half with Gradient and Text */}
+        <motion.div
+          className="w-full md:w-1/2 flex flex-col items-center justify-center bg-blue-600 text-white p-4 md:p-8"
+          initial={{ opacity: 0, x: -100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">Welcome Back!</h1>
+          <p className="text-base md:text-lg text-center">Connect your wallet to continue.</p>
+        </motion.div>
+        <motion.div
+          className="w-full md:w-1/2 flex flex-col items-center justify-center p-4 md:p-8 bg-gray-50"
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="max-w-md w-full bg-white p-8 rounded shadow">
+            <h1 className="text-2xl font-bold mb-4">Register</h1>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Choose your role</option>
+                <option value="PATIENT">Patient</option>
+                <option value="PROVIDER">Provider</option>
+                <option value="RESEARCHER">Researcher</option>
+              </select>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Public Key Hash</label>
+                <input
+                  type="text"
+                  name="publicKeyHash"
+                  value={formData.publicKeyHash}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                  readOnly
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full px-4 py-2 text-white bg-gray-900 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 mb-4"
+                disabled={loading}
+              >
+                {loading ? 'Registering...' : 'Register'}
+              </button>
+            </form>
+            <div className="mt-4 text-center">
+              <p>
+                Already have an account?{' '}
+                <button
+                  className="text-blue-500 underline font-bold"
+                  onClick={() => navigate('/login')}
+                >
+                  Login
+                </button>
+              </p>
+            </div>
+          </div>
+        </motion.div>
       </div>
       <ToastContainer
         position="top-right"
