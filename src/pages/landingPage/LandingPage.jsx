@@ -9,21 +9,21 @@ import Team from "../../../src/components/ui/Team";
 import Footer from "../../../src/components/ui/Footer";
 
 const LandingPage = () => {
-    return (
-      <div className="bg-gray-50 text-gray-800">
-      <Navbar/>
-        <HeroSection />
-        <div className="">
-          <ProblemStatement />
-          <Solution />
-          <Features />
-          <Usecase />
-          <Supervisor />
-          <Team />
-        </div>
-        <Footer />
+  return (
+    <div className="bg-gray-50 text-gray-800">
+      <Navbar />
+      <HeroSection />
+      <div className="">
+        <ProblemStatement />
+        <Solution />
+        {/* <Features /> */}
+        <Usecase />
+        <Supervisor />
+        <Team />
       </div>
-    );
-  };
-  
-  export default LandingPage;
+      <Footer />
+    </div>
+  );
+};
+
+export default LandingPage;

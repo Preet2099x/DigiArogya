@@ -1,132 +1,85 @@
 import React from "react";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
+import { Shield, Lock, Zap, Shuffle } from 'lucide-react';
+import { Card, CardContent, Typography, Button } from "@mui/material";
 
 const Features = () => {
-  const features = [
-    {
-      icon: "✅",
-      title: "Assurance and Reliability",
-    },
-    {
-      icon: "🕵️‍♂️",
-      title: "Audit Trail Transparency",
-    },
-    {
-      icon: "🤝",
-      title: "Streamlined Collaboration",
-    },
+  const featureItems = [
+    { icon: <Shield />, title: "Enhanced Security", description: "Blockchain technology ensures tamper-proof and secure storage of health records." },
+    { icon: <Lock />, title: "Privacy Control", description: "Patients have full control over who can access their health information." },
+    { icon: <Zap />, title: "Efficient Access", description: "Quick and easy access to patient data for authorized healthcare providers." },
+    { icon: <Shuffle />, title: "Interoperability", description: "Seamless data exchange between different healthcare systems and providers." },
   ];
 
   return (
-    <section className="min-h-screen flex items-center justify-center 
-      bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 
-      animate-gradient-x p-8 relative overflow-hidden">
-      <motion.div 
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 p-8 relative overflow-hidden">
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: [0.2, 0.4, 0.2],
-          scale: [1, 1.05, 1],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          repeatType: "loop",
-          ease: "easeInOut"
-        }}
-        className="absolute inset-0 
-          bg-gradient-to-tr from-blue-100/30 via-purple-100/30 to-pink-100/30 
-          opacity-30 blur-3xl pointer-events-none"
+        animate={{ opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
+        className="absolute inset-0 bg-gradient-to-tr from-indigo-100/30 via-purple-100/30 to-pink-100/30 blur-3xl"
       />
 
-      {[...Array(20)].map((_, i) => (
-        <motion.div 
-          key={i}
-          initial={{ 
-            opacity: 0,
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight
-          }}
-          animate={{ 
-            opacity: [0, 0.5, 0],
-            x: [
-              Math.random() * window.innerWidth, 
-              Math.random() * window.innerWidth, 
-              Math.random() * window.innerWidth
-            ],
-            y: [
-              Math.random() * window.innerHeight, 
-              Math.random() * window.innerHeight, 
-              Math.random() * window.innerHeight
-            ],
-            scale: [0.5, 1, 0.5],
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.2)', 
-              'rgba(124, 58, 237, 0.3)', 
-              'rgba(244, 63, 94, 0.2)'
-            ]
-          }}
-          transition={{
-            duration: Math.random() * 10 + 5,
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut"
-          }}
-          className="absolute rounded-full 
-            w-4 h-4 
-            bg-opacity-20 
-            blur-xl"
-        />
-      ))}
-
-      <div className="container mx-auto text-center relative z-10">
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ 
-            opacity: 1, 
-            y: 0,
-            textShadow: [
-              '0 0 5px rgba(59, 130, 246, 0.3)',
-              '0 0 10px rgba(124, 58, 237, 0.3)',
-              '0 0 5px rgba(59, 130, 246, 0.3)'
-            ]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-          className="text-6xl font-extrabold mb-12 
-            bg-clip-text text-transparent 
-            bg-gradient-to-r from-blue-700 via-purple-700 to-pink-600"
+      <div className="container mx-auto relative z-10">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-4xl md:text-5xl font-bold text-center text-purple-900 mb-12"
         >
-          Key Advantages of EHR Solution
-        </motion.h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-          {features.map((feature, index) => (
-            <motion.div 
+          Key Features
+        </motion.h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          {featureItems.map((item, index) => (
+            <motion.div
               key={index}
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                delay: index * 0.2, 
-                duration: 0.8, 
-                type: "spring", 
-                stiffness: 70 
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-6 bg-white/10 backdrop-blur-sm rounded-xl 
-                border border-gray-300 
-                hover:shadow-xl transition duration-300"
+              transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <span className="text-5xl block mb-4">{feature.icon}</span>
-              <p className="text-gray-700 font-semibold text-xl">{feature.title}</p>
+              <Card className="h-full bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
+                <CardContent className="flex items-start p-6">
+                  <div className="p-3 bg-purple-100 rounded-full mr-4">
+                    {React.cloneElement(item.icon, { className: "w-8 h-8 text-purple-600" })}
+                  </div>
+                  <div>
+                    <Typography variant="h6" component="h3" className="text-purple-900 mb-2">
+                      {item.title}
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-600">
+                      {item.description}
+                    </Typography>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="text-center"
+        >
+          <Button
+            variant="contained"
+            size="large"
+            sx={{
+              backgroundColor: "#4C1D95",
+              "&:hover": { backgroundColor: "#5B21B6" },
+              borderRadius: "9999px",
+              padding: "12px 32px",
+              textTransform: "none",
+              fontSize: "1.1rem",
+            }}
+          >
+            Learn More
+          </Button>
+        </motion.div>
       </div>
-    </section>
+    </div>
   );
 };
 
