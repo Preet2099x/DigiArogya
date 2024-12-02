@@ -8,7 +8,7 @@ function LogoutButton() {
     // Show the toast notification
     toast.success("Logged out successfully!", {
       position: "top-right", // Position of the toast
-      autoClose: 1000,       // Auto close after 3 seconds
+      autoClose: 1000, // Auto close after 3 seconds
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -18,7 +18,7 @@ function LogoutButton() {
     // Perform logout logic here (e.g., clearing user data)
     setTimeout(() => {
       // Redirect to the login or home page after the toast
-      window.location.href = "/";
+      window.location.href = "/login";
     }, 1000);
   };
 

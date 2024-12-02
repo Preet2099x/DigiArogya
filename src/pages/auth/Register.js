@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { keccak256, toUtf8Bytes, isAddress } from 'ethers';
-import { ToastContainer, toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
-import 'react-toastify/dist/ReactToastify.css';
-import contractABI from '../../contractABI.json';
-import { generateAndExportKeys } from '../../services/cryptography/keyPairGenerator';
+import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { keccak256, toUtf8Bytes, isAddress } from "ethers";
+import { ToastContainer, toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import "react-toastify/dist/ReactToastify.css";
+import contractABI from "../../contractABI.json";
+import { generateAndExportKeys } from "../../services/cryptography/keyPairGenerator";
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const Register = () => {
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState("");
   const [formData, setFormData] = useState({
-    publicKeyHash: '',
+    publicKeyHash: "",
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -58,17 +58,20 @@ const Register = () => {
       if (accounts.length > 0) {
         window.location.reload();
       } else {
-        toast.warning('Please connect to MetaMask.');
+        toast.warning("Please connect to MetaMask.");
       }
     };
 
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    if (typeof window.ethereum !== "undefined") {
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
     }
 
     return () => {
-      if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      if (typeof window.ethereum !== "undefined") {
+        window.ethereum.removeListener(
+          "accountsChanged",
+          handleAccountsChanged
+        );
       }
     };
   }, []);
@@ -79,11 +82,11 @@ const Register = () => {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      toast.error('MetaMask is required to register!');
+      toast.error("MetaMask is required to register!");
       return null;
     }
     const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send('eth_requestAccounts', []);
+    await provider.send("eth_requestAccounts", []);
     const signer = provider.getSigner();
     return signer;
   };
@@ -91,7 +94,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!role) {
-      toast.warning('Please select a role before registering.');
+      toast.warning("Please select a role before registering.");
       return;
     }
 
@@ -100,7 +103,11 @@ const Register = () => {
       const signer = await connectWallet();
       if (!signer) return;
 
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractABI.abi,
+        signer
+      );
       const { publicKeyHash } = formData;
 
       const roleMap = { PATIENT: 1, PROVIDER: 2, RESEARCHER: 3 };
@@ -110,45 +117,51 @@ const Register = () => {
         throw new Error("Contract function registerUser not found");
       }
 
-      const { publicKeyBase64, privateKeyBase64, keyPair } = await generateAndExportKeys();
-
+      const { publicKeyBase64, privateKeyBase64, keyPair } =
+        await generateAndExportKeys();
 
       console.log("User's Public Key (Base64):", publicKeyBase64);
-      if (publicKeyBase64)
-        console.log(`PublicKey: ${publicKeyBase64}`);
-      const tx = await contract.registerUser(roleValue, publicKeyHash, publicKeyBase64);
+      if (publicKeyBase64) console.log(`PublicKey: ${publicKeyBase64}`);
+      const tx = await contract.registerUser(
+        roleValue,
+        publicKeyHash,
+        publicKeyBase64
+      );
       await tx.wait();
 
-      const privateKeyBlob = new Blob([privateKeyBase64], { type: 'text/plain' });
+      const privateKeyBlob = new Blob([privateKeyBase64], {
+        type: "text/plain",
+      });
       const downloadUrl = URL.createObjectURL(privateKeyBlob);
-      const downloadLink = document.createElement('a');
+      const downloadLink = document.createElement("a");
       downloadLink.href = downloadUrl;
-      downloadLink.download = 'privateKey.txt';
+      downloadLink.download = "privateKey.txt";
 
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
 
       URL.revokeObjectURL(downloadUrl);
-      console.log('Download completed successfully');
+      console.log("Download completed successfully");
 
       toast.success(`${role} registered successfully!`);
 
       // Delay navigation slightly to allow toast to be seen
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 2000);
-
     } catch (error) {
       console.error("Error during registration:", error);
-      toast.error('Registration failed: User already registered or other error');
+      toast.error(
+        "Registration failed: User already registered or other error"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleLoginRedirect = () => {
-    navigate('/');
+    navigate("/login");
   };
 
   return (
@@ -156,7 +169,9 @@ const Register = () => {
       <div className="max-w-md w-full bg-white p-8 rounded shadow">
         <h1 className="text-2xl font-bold mb-4">Register</h1>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Select Role
+          </label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
@@ -170,7 +185,9 @@ const Register = () => {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Public Key Hash</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Public Key Hash
+            </label>
             <input
               type="text"
               name="publicKeyHash"
@@ -186,7 +203,7 @@ const Register = () => {
             className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
             disabled={loading}
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
         <button
@@ -195,7 +212,9 @@ const Register = () => {
         >
           Move to Login
         </button>
-        {loading && <p className="text-center text-blue-500 mt-4">Processing...</p>}
+        {loading && (
+          <p className="text-center text-blue-500 mt-4">Processing...</p>
+        )}
       </div>
       <ToastContainer
         position="top-right"

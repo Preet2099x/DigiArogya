@@ -53,7 +53,7 @@ contract EHRmain {
         address provider;
     }
 
-    struct approvedRecords {
+    struct approvedRecord {
         address owner;
         address careProvider;
         string ipfsCid;
@@ -80,7 +80,6 @@ contract EHRmain {
     // Struct to hold public and private keys
     struct KeyPair {
         string publicKeyForEncryption;
-        // string encryptedPrivateKey;
     }
 
     // State variables
@@ -90,7 +89,8 @@ contract EHRmain {
     mapping(address => mapping(string => mapping(address => bool)))
         public permissions;
     // Mapping to store approved records with careProvider as the key
-    mapping(address => approvedRecords[]) public careProviderRecords;
+    mapping(address => approvedRecord[]) public approvedRecords;
+    mapping(string => approvedRecord) public approvedRecordsByID;
 
     // Mapping to store health record IPFS CIDs by owner address
     mapping(address => string[]) public ownerToHealthRecords;
@@ -122,15 +122,15 @@ contract EHRmain {
         address indexed requester,
         address indexed owner
     );
-    event PermissionRevoked(
-        string indexed ipfsCid,
-        address indexed revokedUser
-    );
-    event EmergencyAccess(
-        address indexed provider,
-        address indexed patient,
-        uint256 timestamp
-    );
+    // event PermissionRevoked(
+    //     string indexed ipfsCid,
+    //     address indexed revokedUser
+    // );
+    // event EmergencyAccess(
+    //     address indexed provider,
+    //     address indexed patient,
+    //     uint256 timestamp
+    // );
 
     // Event to notify when a new record is added
     event ApprovedRecordAdded(
@@ -233,37 +233,37 @@ contract EHRmain {
     }
 
     // Data Contract Functions
-    function addEHRData(
-        address _patientAddress,
-        string memory _ipfsCid,
-        DataType _dataType,
-        string memory _encryptedSymmetricKey
-    ) external onlyProvider returns (bool) {
-        require(_patientAddress != address(0), "Invalid patient address");
-        require(
-            bytes(healthRecords[_ipfsCid].ipfsCid).length == 0,
-            "Record already exists"
-        );
+    // function addEHRData(
+    //     address _patientAddress,
+    //     string memory _ipfsCid,
+    //     DataType _dataType,
+    //     string memory _encryptedSymmetricKey
+    // ) external onlyProvider returns (bool) {
+    //     require(_patientAddress != address(0), "Invalid patient address");
+    //     require(
+    //         bytes(healthRecords[_ipfsCid].ipfsCid).length == 0,
+    //         "Record already exists"
+    //     );
 
-        Role patientRole = checkUser(_patientAddress);
-        require(patientRole == Role.PATIENT, "Invalid patient");
+    //     Role patientRole = checkUser(_patientAddress);
+    //     require(patientRole == Role.PATIENT, "Invalid patient");
 
-        healthRecords[_ipfsCid] = HealthRecord({
-            owner: _patientAddress,
-            ipfsCid: _ipfsCid,
-            dataType: _dataType,
-            encryptedSymmetricKey: _encryptedSymmetricKey,
-            timestamp: block.timestamp,
-            isValid: true,
-            provider: msg.sender
-        });
+    //     healthRecords[_ipfsCid] = HealthRecord({
+    //         owner: _patientAddress,
+    //         ipfsCid: _ipfsCid,
+    //         dataType: _dataType,
+    //         encryptedSymmetricKey: _encryptedSymmetricKey,
+    //         timestamp: block.timestamp,
+    //         isValid: true,
+    //         provider: msg.sender
+    //     });
 
-        ownerToHealthRecords[_patientAddress].push(_ipfsCid); // Store the CID for the owner
+    //     ownerToHealthRecords[_patientAddress].push(_ipfsCid); // Store the CID for the owner
 
-        totalRecords++;
-        emit HealthRecordAdded(_ipfsCid, _patientAddress, _dataType);
-        return true;
-    }
+    //     totalRecords++;
+    //     emit HealthRecordAdded(_ipfsCid, _patientAddress, _dataType);
+    //     return true;
+    // }
 
     function addPHRData(
         string memory _ipfsCid,
@@ -315,7 +315,7 @@ contract EHRmain {
         );
 
         // Add the record to the careProvider mapping
-        approvedRecords memory newRecord = approvedRecords({
+        approvedRecord memory newRecord = approvedRecord({
             owner: _owner,
             careProvider: _careProvider,
             ipfsCid: _ipfsCid,
@@ -326,7 +326,17 @@ contract EHRmain {
             status: true // Active by default
         });
 
-        careProviderRecords[_careProvider].push(newRecord);
+        approvedRecords[_careProvider].push(newRecord);
+        approvedRecordsByID[_ipfsCid] = approvedRecord({
+            owner: _owner,
+            careProvider: _careProvider,
+            ipfsCid: _ipfsCid,
+            dataType: _dataType,
+            encryptedSymmetricKey: _encryptedSymmetricKey,
+            approvedDate: block.timestamp,
+            expiryDate: _expiryDate,
+            status: true // Active by default
+        });
 
         // Emit the event
         emit ApprovedRecordAdded(
@@ -461,7 +471,6 @@ contract EHRmain {
                 index++;
             }
         }
-
         return pendingRequests;
     }
 
@@ -492,7 +501,6 @@ contract EHRmain {
     //     emit PermissionRevoked(_ipfsCid, _user);
     //     return true;
     // }
-
     // Access control
     function getHealthRecordsByOwner(
         address userAddress
@@ -508,7 +516,6 @@ contract EHRmain {
             HealthRecord memory record = healthRecords[ipfsCid];
             records[i] = record;
         }
-
         return records;
     }
 
@@ -542,32 +549,39 @@ contract EHRmain {
 
     function getRecordsByCareProvider(
         address _careProvider
-    ) public view returns (approvedRecords[] memory) {
+    ) public view returns (approvedRecord[] memory) {
         require(_careProvider != address(0), "Invalid care provider address");
-        // require(careProviderRecords[_careProvider])
-        // require(permissions[careProviderRecords[_careProvider][0].owner][careProviderRecords[_careProvider].ipfsCid][careProviderRecords[_careProvider].requester] = true,"You do not have access to this record.");
 
-
-        uint256 totalRecordsForCareProvider = careProviderRecords[_careProvider]
+        uint256 totalRecordsForCareProvider = approvedRecords[_careProvider]
             .length;
-        approvedRecords[] memory records = new approvedRecords[](
+        approvedRecord[] memory records = new approvedRecord[](
             totalRecordsForCareProvider
         );
 
-        for (uint j = 0; j < careProviderRecords[_careProvider].length; j++) {
-            approvedRecords memory record = careProviderRecords[_careProvider][
-                j
-            ];
+        for (uint j = 0; j < approvedRecords[_careProvider].length; j++) {
+            approvedRecord memory record = approvedRecords[_careProvider][j];
             records[j] = record;
         }
         return records;
     }
 
-    function invalidateRecord(
-        string memory _ipfsCid
-    ) external recordExists(_ipfsCid) onlySystemOwner {
-        healthRecords[_ipfsCid].isValid = false;
+    function getRecordsForResearcher(
+        address requester,
+        string memory recordId
+    ) public view returns (approvedRecord memory) {
+        require(requester != address(0), "Invalid address");
+
+        // If the user is a researcher, fetch their records
+        approvedRecord memory record = approvedRecordsByID[recordId];
+
+        return record;
     }
+
+    // function invalidateRecord(
+    //     string memory _ipfsCid
+    // ) external recordExists(_ipfsCid) onlySystemOwner {
+    //     healthRecords[_ipfsCid].isValid = false;
+    // }
 
     function getPermissionRequest(
         bytes32 requestId

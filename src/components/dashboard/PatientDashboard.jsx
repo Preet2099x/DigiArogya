@@ -98,7 +98,6 @@ const PatientDashboard = () => {
   }, []); // Run once when the component mounts
 
   //fetching all pending request of the patient
-
   const fetchPermissionRequests = async () => {
     try {
       if (typeof window.ethereum === "undefined") {
