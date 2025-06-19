@@ -1,22 +1,15 @@
-### How to Run React App in Secure Mode (HTTPS)
+### Local Setup Instructions
 
-1. Run CMD in terminal mode.
-2. Install `mkcert` by running the following command:
+1. Connect Metamask and Ganache. Use `contract/truffle-config.js` file to create the project in the Ganache. 
+2. Create a `.env` at the root dir of the project and copy `.env.sample` to `.env` and add the PINATA_ values.
+3. Run the following command from the contract dir inside the project.
     ```sh
-    choco install mkcert 
+    truffle migrate --reset
     ```
-3. Create the `.cert` directory in the root folder of your project if it doesn't exist:
+    Note: Copy the contract and account address from the output and paste in the REACT_APP_CONTRACT_ADDRESS= && REACT_APP_ADMIN_ADDRESS= respectively in the `.env`.  
+4. Run the following command from the root dir inside the project.
     ```sh
-    mkdir .cert
+    npm run start
     ```
-4. Generate the certificate (run from the root of this project):
-    ```sh
-    mkcert -key-file ./.cert/key.pem -cert-file ./.cert/cert.pem "localhost"
-    ```
-    We'll be storing our generated certificates in the `.cert` directory.
-5. Add the following lines to your `.env` file:
-    ```sh
-    HTTPS=true
-    SSL_CRT_FILE=./.cert/cert.pem
-    SSL_KEY_FILE=./.cert/key.pem
-    ```
+    Note: If first time, run `npm install` then `npm run start`
+5. Now you can access in your browser.
