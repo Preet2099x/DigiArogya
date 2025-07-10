@@ -112,7 +112,16 @@ const Register = () => {
       );
       const { publicKeyHash } = formData;
 
-      const roleMap = { PATIENT: 1, PROVIDER: 2, RESEARCHER: 3 };
+      const roleMap = {
+        PATIENT: 1,
+        PROVIDER: 2,
+        RESEARCHER: 3,
+        HOSPITAL: 4,
+        INSURANCE: 5,
+        AMBULANCE: 6,
+        PHARMACY: 7,
+        LAB: 8
+      };
       const roleValue = roleMap[role];
 
       if (!contract.registerUser) {
@@ -204,14 +213,17 @@ const Register = () => {
                 Select Role
               </label>
               <select
+                className="form-select"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
               >
                 <option value="">Choose your role</option>
-                <option value="PATIENT">Patient</option>
-                <option value="PROVIDER">Provider</option>
-                <option value="RESEARCHER">Researcher</option>
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
             <form onSubmit={handleSubmit}>
@@ -268,3 +280,14 @@ const Register = () => {
 };
 
 export default Register;
+
+const roleOptions = [
+  { value: 'PATIENT', label: 'Patient' },
+  { value: 'PROVIDER', label: 'Healthcare Provider' },
+  { value: 'RESEARCHER', label: 'Researcher' },
+  { value: 'HOSPITAL', label: 'Hospital' },
+  { value: 'INSURANCE', label: 'Insurance Company' },
+  { value: 'AMBULANCE', label: 'Ambulance Service' },
+  { value: 'PHARMACY', label: 'Pharmacy' },
+  { value: 'LAB', label: 'Laboratory' }
+];

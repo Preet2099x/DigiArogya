@@ -131,6 +131,51 @@ const Login = () => {
           });
           setTimeout(() => navigate('/dashboard/researcher'), 2000);
           break;
+        case '4':
+          toast.update(loadingToast, {
+            render: 'Logged in as Hospital',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/hospital'), 2000);
+          break;
+        case '5':
+          toast.update(loadingToast, {
+            render: 'Logged in as Insurance',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/insurance'), 2000);
+          break;
+        case '6':
+          toast.update(loadingToast, {
+            render: 'Logged in as Ambulance',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/ambulance'), 2000);
+          break;
+        case '7':
+          toast.update(loadingToast, {
+            render: 'Logged in as Pharmacy',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/pharmacy'), 2000);
+          break;
+        case '8':
+          toast.update(loadingToast, {
+            render: 'Logged in as Lab',
+            type: 'success',
+            isLoading: false,
+            autoClose: 1000,
+          });
+          setTimeout(() => navigate('/dashboard/lab'), 2000);
+          break;
         default:
           if (walletAddress.toLowerCase() === adminAddress.toLowerCase()) {
             toast.update(loadingToast, {
