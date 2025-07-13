@@ -166,6 +166,31 @@ const PatientDashboard = () => {
     }
   };
 
+  const handleBatchAccessApproval = async (requestId) => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractABI.abi,
+        signer
+      );
+
+      // Call the smart contract method for approving batch access
+      const tx = await contract.approveBatchAccess(requestId);
+
+      // Wait for the transaction to be mined
+      await tx.wait();
+
+      // Refresh the requests after the action
+      fetchPermissionRequests();
+      alert('Batch access request approved successfully!');
+    } catch (error) {
+      console.error('Error approving batch access request:', error);
+      alert('Error approving request. Please try again.');
+    }
+  };
+
   useEffect(() => {
     // Fetch permission requests when the component mounts
     fetchPermissionRequests();
@@ -357,54 +382,57 @@ const PatientDashboard = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {permissionRequests.map((request) => {
-                  return (
-                    <TableRow key={request.requestId}>
-                      <TableCell>{request.requester}</TableCell>{" "}
-                      {/* Requester */}
-                      <TableCell>{request.requestId}</TableCell>{" "}
-                      {/* Request ID */}
-                      <TableCell>{request.ipfsCid || "N/A"}</TableCell>{" "}
-                      {/* IPFS CID */}
-                      <TableCell>
-                        <Chip
-                          label={request.status}
-                          color={
-                            request.status === "PENDING" ? "warning" : "success"
-                          }
-                          size="small"
-                        />
-                      </TableCell>{" "}
-                      {/* Status */}
-                      <TableCell>
-                        {request.requestDate
-                          ? format(
-                              new Date(request.requestDate * 1000),
-                              "MM/dd/yyyy"
-                            )
-                          : "Invalid Date"}
-                      </TableCell>{" "}
-                      {/* Request Date */}
-                      <TableCell>
-                        {request.expiryDate
-                          ? format(
-                              new Date(request.expiryDate * 1000),
-                              "MM/dd/yyyy"
-                            )
-                          : "Invalid Date"}
-                      </TableCell>{" "}
-                      {/* Expiry Date */}
-                      <TableCell>
-                        {formatEther(request.incentiveAmount)} ETH
-                      </TableCell>{" "}
-                      {/* Incentive Amount */}
-                      <TableCell>
-                        {request.isIncentiveBased ? "Yes" : "No"}
-                      </TableCell>{" "}
-                      {/* Incentive-Based */}
-                      <TableCell>
-                        {request.status === "Pending" && (
-                          <>
+                {permissionRequests.map((request) => (
+                  <TableRow key={request.requestId}>
+                    <TableCell>{request.requester}</TableCell>
+                    <TableCell>{request.requestId}</TableCell>
+                    <TableCell>{request.ipfsCid || "N/A"}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={request.status}
+                        color={
+                          request.status === "PENDING" ? "warning" : "success"
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {request.requestDate
+                        ? format(
+                            new Date(request.requestDate * 1000),
+                            "MM/dd/yyyy"
+                          )
+                        : "Invalid Date"}
+                    </TableCell>
+                    <TableCell>
+                      {request.expiryDate
+                        ? format(
+                            new Date(request.expiryDate * 1000),
+                            "MM/dd/yyyy"
+                          )
+                        : "Invalid Date"}
+                    </TableCell>
+                    <TableCell>
+                      {formatEther(request.incentiveAmount)} ETH
+                    </TableCell>
+                    <TableCell>
+                      {request.isIncentiveBased ? "Yes" : "No"}
+                    </TableCell>
+                    <TableCell>
+                      {request.status === "Pending" && (
+                        <>
+                          {request.ipfsCid === "" ? (
+                            // This is a batch access request
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{ backgroundColor: "#00796b", mr: 1 }}
+                              onClick={() => handleBatchAccessApproval(request.requestId)}
+                            >
+                              Approve Batch Access
+                            </Button>
+                          ) : (
+                            // This is a regular access request
                             <Button
                               variant="contained"
                               size="small"
@@ -416,26 +444,25 @@ const PatientDashboard = () => {
                             >
                               Approve
                             </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              onClick={() =>
-                                handleRequestAction(
-                                  request.requestId,
-                                  "decline"
-                                )
-                              }
-                            >
-                              Decline
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>{" "}
-                      {/* Actions */}
-                    </TableRow>
-                  );
-                })}
+                          )}
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            onClick={() =>
+                              handleRequestAction(
+                                request.requestId,
+                                "decline"
+                              )
+                            }
+                          >
+                            Decline
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

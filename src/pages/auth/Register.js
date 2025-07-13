@@ -114,7 +114,7 @@ const Register = () => {
 
       const roleMap = {
         PATIENT: 1,
-        PROVIDER: 2,
+        DOCTOR: 2,
         RESEARCHER: 3,
         HOSPITAL: 4,
         INSURANCE: 5,
@@ -283,7 +283,7 @@ export default Register;
 
 const roleOptions = [
   { value: 'PATIENT', label: 'Patient' },
-  { value: 'PROVIDER', label: 'Healthcare Provider' },
+  { value: 'DOCTOR', label: 'Doctor' },
   { value: 'RESEARCHER', label: 'Researcher' },
   { value: 'HOSPITAL', label: 'Hospital' },
   { value: 'INSURANCE', label: 'Insurance Company' },

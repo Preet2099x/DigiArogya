@@ -6,7 +6,7 @@ contract EHRmain {
     enum Role {
         NONE,
         PATIENT,
-        PROVIDER,
+        DOCTOR,
         RESEARCHER,
         HOSPITAL,
         INSURANCE,
@@ -137,7 +137,7 @@ contract EHRmain {
 
     modifier onlyProvider() {
         require(
-            users[msg.sender].role == Role.PROVIDER ||
+            users[msg.sender].role == Role.DOCTOR ||
             users[msg.sender].role == Role.HOSPITAL ||
             users[msg.sender].role == Role.LAB,
             "Only healthcare providers can call this function"
@@ -178,7 +178,7 @@ contract EHRmain {
         require(_role != Role.NONE, "Invalid role");
         require(
             _role == Role.PATIENT ||
-            _role == Role.PROVIDER ||
+            _role == Role.DOCTOR ||
             _role == Role.RESEARCHER ||
             _role == Role.HOSPITAL ||
             _role == Role.INSURANCE ||
@@ -584,4 +584,61 @@ contract EHRmain {
         emergencyAccesses[_ambulance][_patient] = false;
         return true;
     }
+
+    function requestBatchAccess(address _owner) external returns (bytes32) {
+        require(_owner != address(0), "Invalid owner address");
+        require(users[_owner].role == Role.PATIENT, "Owner must be a patient");
+        
+        bytes32 requestId = keccak256(
+            abi.encodePacked(msg.sender, _owner, block.timestamp)
+        );
+        
+        permissionRequests[requestId] = PermissionRequest({
+            requester: msg.sender,
+            owner: _owner,
+            requestId: requestId,
+            ipfsCid: "", // Empty IPFS CID indicates batch access request
+            permissionType: PermissionType.VIEW,
+            status: RequestStatus.PENDING,
+            requestDate: block.timestamp,
+            expiryDate: block.timestamp + 30 days,
+            incentiveAmount: 0,
+            isIncentiveBased: false
+        });
+        
+        totalRequests++;
+        emit PermissionRequested(requestId, msg.sender, _owner);
+        permissionRequestIds.push(requestId);
+        return requestId;
+    }
+
+    function approveBatchAccess(bytes32 _requestId) external returns (bool) {
+        require(permissionRequests[_requestId].owner == msg.sender, "Only the owner can approve");
+        require(permissionRequests[_requestId].status == RequestStatus.PENDING, "Invalid request status");
+        require(block.timestamp <= permissionRequests[_requestId].expiryDate, "Request expired");
+
+        permissionRequests[_requestId].status = RequestStatus.APPROVED;
+        
+        // Grant permissions for all records owned by the patient
+        string[] memory patientRecords = ownerToHealthRecords[msg.sender];
+        for (uint i = 0; i < patientRecords.length; i++) {
+            permissions[msg.sender][patientRecords[i]][permissionRequests[_requestId].requester] = true;
+            
+            // Add to approved records
+            HealthRecord memory record = healthRecords[patientRecords[i]];
+            addApprovedRecord(
+                msg.sender,
+                permissionRequests[_requestId].requester,
+                patientRecords[i],
+                record.dataType,
+                record.encryptedSymmetricKey,
+                block.timestamp,
+                permissionRequests[_requestId].expiryDate
+            );
+        }
+
+        emit PermissionGranted(_requestId, permissionRequests[_requestId].requester, msg.sender);
+        return true;
+    }
 }
+

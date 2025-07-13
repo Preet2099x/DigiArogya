@@ -248,6 +248,36 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Function for batch permission request
+  const handleBatchAccessRequest = async () => {
+    try {
+      if (!userPublicKey) {
+        alert('Please enter the patient\'s Ethereum address');
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractABI.abi,
+        signer
+      );
+
+      // Call the smart contract method for batch access request
+      const tx = await contract.requestBatchAccess(userPublicKey);
+
+      // Wait for the transaction to be mined
+      await tx.wait();
+
+      // Notify user of success
+      alert('Batch access request submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting batch access request:', error);
+      alert('Error submitting request. Please try again.');
+    }
+  };
+
   // Function for Incentive Based Permission Request
   // const handleIncentiveBasedRequest = async () => {
   //   try {
@@ -390,6 +420,22 @@ const ResearcherDashboard = () => {
                 >
                   Request Access by Ethereum Address
                 </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleBatchAccessRequest}
+                  sx={{
+                    px: 3,
+                    py: 1,
+                    bgcolor: "#1565c0",
+                    "&:hover": {
+                      bgcolor: "#0d47a1",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+                    },
+                  }}
+                >
+                  Request Batch Access
+                </Button>
               </Box>
             </Card>
 
@@ -405,22 +451,24 @@ const ResearcherDashboard = () => {
               <Table>
                 <TableHead sx={{ bgcolor: theme.palette.background.default }}>
                   <TableRow>
-                    {[
-                      "Ethereum Address",
-                      "IPFS CID",
-                      "Date Created",
-                      "Actions",
-                    ].map((header) => (
-                      <TableCell
-                        key={header}
-                        sx={{
-                          fontWeight: 600,
-                          color: theme.palette.text.secondary,
-                        }}
-                      >
-                        {header}
-                      </TableCell>
-                    ))}
+                    {
+                      [
+                        "Ethereum Address",
+                        "IPFS CID",
+                        "Date Created",
+                        "Actions",
+                      ].map((header) => (
+                        <TableCell
+                          key={header}
+                          sx={{
+                            fontWeight: 600,
+                            color: theme.palette.text.secondary,
+                          }}
+                        >
+                          {header}
+                        </TableCell>
+                      ))
+                    }
                   </TableRow>
                 </TableHead>
 

@@ -6,6 +6,10 @@ const pinata = new PinataSDK({
 
 export const downloadFromIPFS = async (ipfsHash) => {
     try {
+        if (!ipfsHash || typeof ipfsHash !== 'string') {
+            throw new Error('Invalid IPFS hash: hash must be a non-empty string');
+        }
+
         const data = await pinata.gateways.get(ipfsHash);
         console.log(data);
 

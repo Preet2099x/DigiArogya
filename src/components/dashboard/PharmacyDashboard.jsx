@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Tab, Tabs, Typography, Button, Dialog, TextField, Alert } from '@mui/material';
 import FileDownloader from '../files/FileDownloader';
+import { BrowserProvider, ethers } from 'ethers';
+import contractABI from '../../contractABI.json';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const PharmacyDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -25,6 +29,33 @@ const PharmacyDashboard = () => {
       setOpenAlert(true);
     } catch (error) {
       setAlertMessage('Failed to send access request');
+      setAlertSeverity('error');
+      setOpenAlert(true);
+    }
+  };
+
+  const handleBatchAccessRequest = async (patientAddress) => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractABI.abi,
+        signer
+      );
+
+      // Call the smart contract method for requesting batch access
+      const tx = await contract.requestBatchAccess(patientAddress);
+
+      // Wait for the transaction to be mined
+      await tx.wait();
+
+      setAlertMessage('Batch access request sent successfully');
+      setAlertSeverity('success');
+      setOpenAlert(true);
+    } catch (error) {
+      console.error('Error requesting batch access:', error);
+      setAlertMessage('Failed to send batch access request');
       setAlertSeverity('error');
       setOpenAlert(true);
     }
@@ -83,6 +114,14 @@ const PharmacyDashboard = () => {
               sx={{ mt: 1, ml: 1 }}
             >
               View Prescription
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => handleBatchAccessRequest(prescription.patientAddress)}
+              sx={{ mt: 1, ml: 1 }}
+            >
+              Request Batch Access
             </Button>
           </Box>
         ))}

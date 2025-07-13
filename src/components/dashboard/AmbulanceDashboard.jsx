@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Dialog, TextField, Alert, Card, CardContent } from '@mui/material';
+import { Box, Typography, Button, Dialog, TextField, Alert, Card, CardContent, CircularProgress } from '@mui/material';
 import FileDownloader from '../files/FileDownloader';
 import { ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
@@ -15,6 +15,7 @@ const AmbulanceDashboard = () => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('info');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleEmergencyAccess = async () => {
     try {
@@ -25,6 +26,7 @@ const AmbulanceDashboard = () => {
         return;
       }
 
+      setIsLoading(true);
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
@@ -32,6 +34,12 @@ const AmbulanceDashboard = () => {
       // Request emergency access
       const tx = await contract.emergencyAccess(patientAddress);
       await tx.wait();
+
+      // Verify emergency access was granted
+      const hasAccess = await contract.checkEmergencyAccess(await signer.getAddress(), patientAddress);
+      if (!hasAccess) {
+        throw new Error('Emergency access verification failed');
+      }
 
       setAlertMessage('Emergency access granted successfully');
       setAlertSeverity('success');
@@ -54,9 +62,67 @@ const AmbulanceDashboard = () => {
       
     } catch (error) {
       console.error('Emergency access error:', error);
-      setAlertMessage('Failed to get emergency access: ' + error.message);
+      let errorMessage = 'Failed to get emergency access';
+      
+      // Handle specific contract errors
+      if (error.message.includes('Invalid patient address')) {
+        errorMessage = 'Invalid patient address provided';
+      } else if (error.message.includes('Only ambulance services')) {
+        errorMessage = 'Only authorized ambulance services can request emergency access';
+      } else if (error.message.includes('user rejected')) {
+        errorMessage = 'Transaction was rejected by user';
+      } else {
+        errorMessage += ': ' + (error.reason || error.message);
+      }
+      
+      setAlertMessage(errorMessage);
       setAlertSeverity('error');
       setOpenAlert(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBatchAccessRequest = async () => {
+    try {
+      if (!patientAddress) {
+        setAlertMessage('Please enter patient\'s address');
+        setAlertSeverity('warning');
+        setOpenAlert(true);
+        return;
+      }
+
+      setIsLoading(true);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+
+      // Request batch access
+      const tx = await contract.requestBatchAccess(patientAddress);
+      await tx.wait();
+
+      setAlertMessage('Batch access request sent successfully. Waiting for patient approval.');
+      setAlertSeverity('success');
+      setOpenAlert(true);
+    } catch (error) {
+      console.error('Batch access request error:', error);
+      let errorMessage = 'Failed to request batch access';
+
+      if (error.message.includes('Invalid owner address')) {
+        errorMessage = 'Invalid patient address provided';
+      } else if (error.message.includes('Owner must be a patient')) {
+        errorMessage = 'The provided address is not registered as a patient';
+      } else if (error.message.includes('user rejected')) {
+        errorMessage = 'Transaction was rejected by user';
+      } else {
+        errorMessage += ': ' + (error.reason || error.message);
+      }
+
+      setAlertMessage(errorMessage);
+      setAlertSeverity('error');
+      setOpenAlert(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,14 +153,30 @@ const AmbulanceDashboard = () => {
               onChange={(e) => setPatientAddress(e.target.value)}
               fullWidth
               sx={{ mb: 2 }}
+              disabled={isLoading}
             />
             <Button
               variant="contained"
               color="error"
               onClick={handleEmergencyAccess}
               sx={{ height: 56 }}
+              disabled={isLoading}
             >
-              Get Emergency Access
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                'Get Emergency Access'
+              )}
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={handleBatchAccessRequest}
+              sx={{ height: 40 }}
+              disabled={isLoading}
+            >
+              Request Batch Access
             </Button>
           </Box>
         </CardContent>
@@ -147,9 +229,19 @@ const AmbulanceDashboard = () => {
       {/* Alert */}
       <Alert
         severity={alertSeverity}
-        open={openAlert}
         onClose={() => setOpenAlert(false)}
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: openAlert ? 'flex' : 'none',
+          zIndex: 9999,
+          maxWidth: '80%',
+          '& .MuiAlert-message': {
+            maxWidth: '100%',
+            wordBreak: 'break-word'
+          }
+        }}
       >
         {alertMessage}
       </Alert>

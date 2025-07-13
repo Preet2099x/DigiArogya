@@ -54,11 +54,10 @@ const DoctorDashboard = () => {
   const [encryptedSymmetricKey, setEncryptedSymmetricKey] = useState("");
   const [hashForDownload, setHashForDownload] = useState("");
   //new
-  const [ownerAddress, setOwnerAddress] = useState("");
-  const [ipfsCid, setIpfsCid] = useState("");
-  const [permissionType, setPermissionType] = useState(0); // This can be an enum or a string, depending on your smart contract
-  const [incentiveAmount, setIncentiveAmount] = useState(0); // Incentive amount, if needed
+  const [patientAddressForAccess, setPatientAddressForAccess] = useState("");
   const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertSeverity, setAlertSeverity] = useState("info");
   //
 
   const [toggleState, setToggleState] = useState({ toggle: false });
@@ -111,65 +110,39 @@ const DoctorDashboard = () => {
     getRecordsByCareProvider();
   }, []);
 
-  // Function for Non-Incentive Based Permission Request
-  const handleNonIncentiveBasedRequest = async () => {
+  // Function to request batch access for all patient records
+  const handleRequestAccess = async () => {
     try {
-      const provider = new BrowserProvider(window.ethereum);
+      if (!patientAddressForAccess) {
+        setAlertMessage('Please enter the patient\'s address');
+        setAlertSeverity('warning');
+        setOpenAlert(true);
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const userPublicKey = await signer.getAddress();
-      // Interact with the smart contract to fetch records
       const contract = new ethers.Contract(
         contractAddress,
         contractABI.abi,
         signer
       );
 
-      // Call the smart contract method for non-incentive-based permission request
-      const tx = await contract.requestNonIncentiveBasedPermission(
-        ownerAddress, // The owner address
-        ipfsCid, // The IPFS CID
-        permissionType // The permission type (e.g., read, write)
-      );
-
-      // Wait for the transaction to be mined
+      // Request batch access for all patient records
+      const tx = await contract.requestBatchAccess(patientAddressForAccess);
       await tx.wait();
 
-      // Notify user of success
-      alert("Request submitted successfully!");
+      setAlertMessage('Access request sent successfully');
+      setAlertSeverity('success');
+      setOpenAlert(true);
+      setPatientAddressForAccess('');
     } catch (error) {
-      console.error("Error submitting non-incentive-based request:", error);
-      alert("Error submitting request. Please try again.");
+      console.error('Error requesting access:', error);
+      setAlertMessage('Failed to send access request: ' + error.message);
+      setAlertSeverity('error');
+      setOpenAlert(true);
     }
   };
-
-  // Function for Incentive Based Permission Request
-  // const handleIncentiveBasedRequest = async () => {
-  //   try {
-  //     // Check if the contract is available
-
-  //     // Get the signer from the provider
-  //     const signer = provider.getSigner();
-
-  //     // Call the smart contract method for incentive-based permission request
-  //     const tx = await contract.requestIncentiveBasedPermission(
-  //       ownerAddress,      // The owner address
-  //       ipfsCid,           // The IPFS CID
-  //       permissionType,    // The permission type (e.g., read, write)
-  //       {
-  //         value: ethers.utils.parseEther(incentiveAmount.toString()) // Sending incentive amount in Ether
-  //       }
-  //     );
-
-  //     // Wait for the transaction to be mined
-  //     await tx.wait();
-
-  //     // Notify user of success
-  //     alert("Request with incentive submitted successfully!");
-  //   } catch (error) {
-  //     console.error("Error submitting incentive-based request:", error);
-  //     alert("Error submitting request. Please try again.");
-  //   }
-  // };
 
   async function getRecordsByCareProvider() {
     try {
@@ -359,55 +332,52 @@ const DoctorDashboard = () => {
             {/* Request Form */}
             <Box sx={{ mt: 4 }}>
               <Typography variant="h6" fontWeight="bold">
-                Make Permission Request
+                Request Patient Records Access
               </Typography>
               <Box
                 component="form"
-                sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 2 }}
+                sx={{ mt: 2, display: "flex", gap: 2, alignItems: "flex-start" }}
               >
                 <TextField
-                  label="Owner Address"
+                  label="Patient Address"
                   variant="outlined"
                   fullWidth
-                  value={ownerAddress}
-                  onChange={(e) => setOwnerAddress(e.target.value)}
-                />
-                <TextField
-                  label="IPFS CID"
-                  variant="outlined"
-                  fullWidth
-                  value={ipfsCid}
-                  onChange={(e) => setIpfsCid(e.target.value)}
-                />
-                <TextField
-                  label="Permission Type"
-                  variant="outlined"
-                  fullWidth
-                  value={permissionType}
-                  onChange={(e) => setPermissionType(e.target.value)}
+                  value={patientAddressForAccess}
+                  onChange={(e) => setPatientAddressForAccess(e.target.value)}
+                  placeholder="Enter patient's Ethereum address"
+                  sx={{ flexGrow: 1 }}
                 />
                 <Button
                   variant="contained"
-                  sx={{ mt: 2, backgroundColor: "#00796b" }}
-                  onClick={
-                    permissionType === "IncentiveBased"
-                      ? handleNonIncentiveBasedRequest
-                      : handleNonIncentiveBasedRequest
-                  }
+                  sx={{ backgroundColor: "#00796b", height: "56px" }}
+                  onClick={handleRequestAccess}
                 >
-                  Submit Request
+                  Request Access
                 </Button>
-                <Dialog
-                  open={openDownloadDialog}
-                  onClose={() => handleDownloadDialog(false)}
-                >
-                  <FileDownloader
-                    onClose={() => handleDownloadDialog(false)}
-                    ipfsHash={hashForDownload}
-                    encryptedSymmetricKey={encryptedSymmetricKey}
-                  />
-                </Dialog>
               </Box>
+              <Dialog
+                open={openDownloadDialog}
+                onClose={() => handleDownloadDialog(false)}
+              >
+                <FileDownloader
+                  onClose={() => handleDownloadDialog(false)}
+                  ipfsHash={hashForDownload}
+                  encryptedSymmetricKey={encryptedSymmetricKey}
+                />
+              </Dialog>
+              <Snackbar
+                open={openAlert}
+                autoHideDuration={6000}
+                onClose={handleCloseAlert}
+              >
+                <Alert
+                  onClose={handleCloseAlert}
+                  severity={alertSeverity}
+                  sx={{ width: "100%" }}
+                >
+                  {alertMessage}
+                </Alert>
+              </Snackbar>
             </Box>
           </Box>
         )}
@@ -508,22 +478,7 @@ const DoctorDashboard = () => {
       </DialogActions> */}
         </Dialog>
 
-        {/* Success Alert */}
-        <Snackbar
-          open={openAlert}
-          autoHideDuration={6000}
-          onClose={handleCloseAlert}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleCloseAlert}
-            severity="success"
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            File uploaded successfully!
-          </Alert>
-        </Snackbar>
+
 
         <Dialog
           open={openDownloadDialog}

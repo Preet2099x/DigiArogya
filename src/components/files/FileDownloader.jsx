@@ -11,14 +11,18 @@ import { ToastContainer, toast } from "react-toastify";
 
 window.Buffer = window.Buffer || Buffer;
 
-const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
+const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
   const [privateKeyForDecryption, setPrivateKeyForDecryption] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Get IPFS hash and encrypted key from either recordInfo or direct props
+  const actualIpfsHash = recordInfo?.ipfsCid || ipfsHash;
+  const actualEncryptedKey = recordInfo?.encryptedSymmetricKey || encryptedSymmetricKey;
+
   const handleDownload = async () => {
-    if (!ipfsHash || !privateKeyForDecryption) {
-      setError("Please provide both IPFS hash and decryption key");
+    if (!privateKeyForDecryption) {
+      setError("Please enter your private key");
       return;
     }
 
@@ -28,10 +32,10 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
     try {
       const decryptedSymmetricKey = await decryptWithPrivateKey(
         privateKeyForDecryption,
-        encryptedSymmetricKey
+        actualEncryptedKey
       );
       const { encryptedContent, fileType, fileName } = await downloadFromIPFS(
-        ipfsHash
+        actualIpfsHash
       );
       toast.success(
         `File downloaded successfully: ${fileName}.${fileType} file`
@@ -77,15 +81,6 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
           >
             <TextField
               fullWidth
-              label="IPFS Hash"
-              value={ipfsHash}
-              placeholder="Enter IPFS hash"
-              variant="outlined"
-              disabled
-            />
-
-            <TextField
-              fullWidth
               label="Enter your Private Key"
               type="password"
               value={privateKeyForDecryption}
@@ -112,7 +107,7 @@ const FileDownloader = ({ ipfsHash, encryptedSymmetricKey }) => {
               variant="contained"
               color="primary"
               onClick={handleDownload}
-              disabled={loading || !ipfsHash || !privateKeyForDecryption}
+              disabled={loading || !privateKeyForDecryption}
               fullWidth
               sx={{ mt: 2 }}
               startIcon={loading ? <Loader2 /> : <Download />}
