@@ -52,6 +52,7 @@ const PharmacyDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchApprovedRecords = async () => {
     try {
@@ -207,6 +208,33 @@ const PharmacyDashboard = () => {
     setOpenDownloadDialog(open);
   };
 
+  const handleProcessPrescription = async (record) => {
+    try {
+      setIsProcessing(true);
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+
+      // Revoke permission for the prescription record
+      const tx = await contract.revokePermission(record.ipfsCid, await signer.getAddress());
+      await tx.wait();
+
+      // Remove the processed record from the local state
+      setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== record.ipfsCid));
+
+      setAlertMessage('Prescription processed successfully');
+      setAlertSeverity('success');
+      setOpenAlert(true);
+    } catch (error) {
+      console.error('Error processing prescription:', error);
+      setAlertMessage('Failed to process prescription: ' + (error.reason || error.message));
+      setAlertSeverity('error');
+      setOpenAlert(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', typography: 'body1' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -265,6 +293,14 @@ const PharmacyDashboard = () => {
                     sx={{ mr: 1 }}
                   >
                     View Record
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleProcessPrescription(record)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : 'Process Prescription'}
                   </Button>
                 </Box>
               </CardContent>
