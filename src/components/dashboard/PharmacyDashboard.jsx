@@ -10,12 +10,14 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Snackbar
+  Snackbar,
+  Dialog
 } from '@mui/material';
 
 import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
+import FileDownloader from '../files/FileDownloader';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -48,6 +50,8 @@ const PharmacyDashboard = () => {
   const [patientAddress, setPatientAddress] = useState('');
   const [patientRecords, setPatientRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
   const fetchApprovedRecords = async () => {
     try {
@@ -194,24 +198,13 @@ const PharmacyDashboard = () => {
     }
   };
 
-  const handleDownload = async (record) => {
-    try {
-      const response = await fetch(`https://ipfs.io/ipfs/${record.ipfsCid}`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `prescription_${record.timestamp}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Error downloading record:', error);
-      setAlertMessage('Failed to download record');
-      setAlertSeverity('error');
-      setOpenAlert(true);
-    }
+  const handleDownload = (record) => {
+    setSelectedRecord(record);
+    setOpenDownloadDialog(true);
+  };
+
+  const handleDownloadDialog = (open) => {
+    setOpenDownloadDialog(open);
   };
 
   return (
@@ -271,7 +264,7 @@ const PharmacyDashboard = () => {
                     onClick={() => handleDownload(record)}
                     sx={{ mr: 1 }}
                   >
-                    Download Record
+                    View Record
                   </Button>
                 </Box>
               </CardContent>
@@ -284,61 +277,17 @@ const PharmacyDashboard = () => {
         )}
       </TabPanel>
 
-      {/* Request Access Tab */}
-      <TabPanel value={tabValue} index={0}>
-        <Typography variant="h6" gutterBottom>
-          Request Patient Record Access
-        </Typography>
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            label="Patient Address"
-            value={patientAddress}
-            onChange={(e) => setPatientAddress(e.target.value)}
-            sx={{ flexGrow: 1 }}
-          />
-          <Button
-            variant="contained"
-            onClick={handleGetPatientRecords}
-            disabled={isLoading}
-          >
-            View Records
-          </Button>
-        </Box>
-
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : patientRecords.length > 0 ? (
-          patientRecords.map((record) => (
-            <Card key={record.id} sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="subtitle1" gutterBottom>
-                  Prescription Record
-                </Typography>
-                <Typography>Type: {record.type}</Typography>
-                <Typography>Date: {new Date(record.timestamp * 1000).toLocaleDateString()}</Typography>
-                <Typography>Patient: {record.patientAddress}</Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleDownload(record)}
-                    sx={{ mr: 1 }}
-                  >
-                    Download Record
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          ))
-        ) : patientAddress && (
-          <Typography color="text.secondary" sx={{ textAlign: 'center', p: 3 }}>
-            No accessible records found. Use the "Request Access" tab to request permission from the patient.
-          </Typography>
-        )}
-      </TabPanel>
-
-
+      {/* File Downloader Dialog */}
+      <Dialog
+        open={openDownloadDialog}
+        onClose={() => handleDownloadDialog(false)}
+      >
+        <FileDownloader
+          onClose={() => handleDownloadDialog(false)}
+          ipfsHash={selectedRecord?.ipfsCid}
+          encryptedSymmetricKey={selectedRecord?.encryptedSymmetricKey}
+        />
+      </Dialog>
 
       {/* Alert Component */}
       <Snackbar
