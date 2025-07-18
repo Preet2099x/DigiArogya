@@ -42,13 +42,57 @@ function TabPanel(props) {
 
 const PharmacyDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
-
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('info');
   const [patientAddress, setPatientAddress] = useState('');
   const [patientRecords, setPatientRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const fetchApprovedRecords = async () => {
+    try {
+      setIsLoading(true);
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      
+      // Get all records that the pharmacy has access to
+      const records = await contract.getRecordsByCareProvider(await signer.getAddress());
+      
+      // Filter for records of type PRESCRIPTION
+      const formattedRecords = records
+        .filter(record => Number(record.dataType) === 3) // PRESCRIPTION type
+        .map((record, index) => ({
+          id: index,
+          type: getDataTypeName(Number(record.dataType)),
+          timestamp: Number(record.timestamp),
+          patientAddress: record.owner,
+          ipfsCid: record.ipfsCid,
+          encryptedSymmetricKey: record.encryptedSymmetricKey
+        }));
+
+      setPatientRecords(formattedRecords);
+      
+      if (formattedRecords.length === 0) {
+        setAlertMessage('No accessible prescription records found.');
+        setAlertSeverity('info');
+        setOpenAlert(true);
+      }
+    } catch (error) {
+      console.error('Error fetching approved records:', error);
+      setAlertMessage('Failed to fetch approved records: ' + (error.reason || error.message));
+      setAlertSeverity('error');
+      setOpenAlert(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tabValue === 1) {
+      fetchApprovedRecords();
+    }
+  }, [tabValue]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -205,6 +249,45 @@ const PharmacyDashboard = () => {
       <TabPanel value={tabValue} index={1}>
         <Typography variant="h6" gutterBottom>
           Approved Patient Records
+        </Typography>
+
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : patientRecords.length > 0 ? (
+          patientRecords.map((record) => (
+            <Card key={record.id} sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="subtitle1" gutterBottom>
+                  Prescription Record
+                </Typography>
+                <Typography>Type: {record.type}</Typography>
+                <Typography>Date: {new Date(record.timestamp * 1000).toLocaleDateString()}</Typography>
+                <Typography>Patient: {record.patientAddress}</Typography>
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleDownload(record)}
+                    sx={{ mr: 1 }}
+                  >
+                    Download Record
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Typography color="text.secondary" sx={{ textAlign: 'center', p: 3 }}>
+            No accessible records found. Use the "Request Access" tab to request permission from patients.
+          </Typography>
+        )}
+      </TabPanel>
+
+      {/* Request Access Tab */}
+      <TabPanel value={tabValue} index={0}>
+        <Typography variant="h6" gutterBottom>
+          Request Patient Record Access
         </Typography>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
           <TextField
