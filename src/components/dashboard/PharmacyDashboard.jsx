@@ -76,7 +76,8 @@ const PharmacyDashboard = () => {
           timestamp: Number(record.timestamp),
           patientAddress: record.owner,
           ipfsCid: record.ipfsCid,
-          encryptedSymmetricKey: record.encryptedSymmetricKey
+          encryptedSymmetricKey: record.encryptedSymmetricKey,
+          isProcessing: false // <-- Add this line
         }));
 
       setPatientRecords(formattedRecords);
@@ -211,33 +212,54 @@ const PharmacyDashboard = () => {
     setOpenDownloadDialog(open);
   };
 
-  const handleProcessPrescription = async (record) => {
+const handleProcessPrescription = async (clickedRecord) => {
+    // Set processing state only for the clicked card
+    setPatientRecords(prevRecords =>
+      prevRecords.map(r => 
+        r.id === clickedRecord.id ? { ...r, isProcessing: true } : r
+      )
+    );
+
     try {
-      setIsProcessing(true);
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      const pharmacyAddress = await signer.getAddress();
 
-      // Revoke permission for the prescription record
-      const tx = await contract.revokePermission(record.ipfsCid, await signer.getAddress());
+      // This call will now work because of the smart contract fix
+      const tx = await contract.revokePermission(clickedRecord.ipfsCid, pharmacyAddress);
+      
+      setAlertMessage('Processing transaction... please wait.');
+      setAlertSeverity('info');
+      setOpenAlert(true);
+      
       await tx.wait();
 
-      // Remove the processed record from the local state
-      setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== record.ipfsCid));
+      // Remove the processed record from the UI
+      setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== clickedRecord.ipfsCid));
 
-      setAlertMessage('Prescription processed successfully');
+      setAlertMessage('Prescription processed successfully!');
       setAlertSeverity('success');
       setOpenAlert(true);
+
     } catch (error) {
       console.error('Error processing prescription:', error);
-      setAlertMessage('Failed to process prescription: ' + (error.reason || error.message));
+      let errorMessage = 'Failed to process prescription: ' + (error.reason || error.message);
+      if (error.code === 'ACTION_REJECTED') {
+          errorMessage = 'Transaction was rejected by user.';
+      }
+      setAlertMessage(errorMessage);
       setAlertSeverity('error');
       setOpenAlert(true);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
+      
+      // Reset processing state on failure
+      setPatientRecords(prevRecords =>
+        prevRecords.map(r => 
+          r.id === clickedRecord.id ? { ...r, isProcessing: false } : r
+        )
+      );
+    } 
+};
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
      <Box sx={{ 
@@ -376,11 +398,11 @@ const PharmacyDashboard = () => {
                           variant="contained"
                           color="primary"
                           onClick={() => handleProcessPrescription(record)}
-                          disabled={isProcessing}
+                          disabled={record.isProcessing}
                           fullWidth
                           sx={{ borderRadius: 2 }}
                         >
-                          {isProcessing ? (
+                          {record.isProcessing ? (
                             <>
                               <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
                               Processing...

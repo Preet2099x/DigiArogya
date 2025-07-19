@@ -429,8 +429,10 @@ contract EHRmain {
         returns (bool) 
     {
         require(
-            msg.sender == healthRecords[_ipfsCid].owner || msg.sender == systemOwner,
-            "Only owner or system owner can revoke permissions"
+            msg.sender == healthRecords[_ipfsCid].owner || // The patient (owner)
+            msg.sender == _user ||                       // The user themselves
+            msg.sender == systemOwner,                   // The system owner
+            "Not authorized to revoke this permission"
         );
         
         permissions[healthRecords[_ipfsCid].owner][_ipfsCid][_user] = false;
