@@ -11,17 +11,20 @@ import {
   CardContent,
   CircularProgress,
   Snackbar,
-  Dialog
+  Dialog,
+  Paper,
+  IconButton,
+  Tooltip,
+  Fade
 } from '@mui/material';
-
 import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
 import FileDownloader from '../files/FileDownloader';
+import { LocalPharmacy, AccessTime, Person, Description } from '@mui/icons-material';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
-// TabPanel component
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
 
@@ -236,40 +239,83 @@ const PharmacyDashboard = () => {
   };
 
   return (
-    <Box sx={{ width: '100%', typography: 'body1' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Request Access" />
-          <Tab label="Approved Records" />
-        </Tabs>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
+     <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(120deg, #2196F3 0%, #1976D2 100%)',
+      color: 'white'
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <LocalPharmacy sx={{ fontSize: 40 }} />
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+          Pharmacy Dashboard
+        </Typography>
       </Box>
+      <Tabs 
+        value={tabValue} 
+        onChange={handleTabChange}
+        sx={{
+          '& .MuiTab-root': {
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&.Mui-selected': { color: 'white' }
+          },
+          '& .MuiTabs-indicator': { backgroundColor: 'white' }
+        }}
+      >
+        <Tab label="Request Access" />
+        <Tab label="Approved Records" />
+      </Tabs>
+    </Box>
 
+    {/* Main Page Content Area */}
+    <Box sx={{ 
+      flexGrow: 1,
+      p: { xs: 2, md: 4 },
+      bgcolor: '#f5f7fa'
+    }}>
       {/* Request Access Tab */}
       <TabPanel value={tabValue} index={0}>
-        <Typography variant="h6" gutterBottom>
-          Request Patient Record Access
-        </Typography>
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            label="Patient Address"
-            value={patientAddress}
-            onChange={(e) => setPatientAddress(e.target.value)}
-            sx={{ flexGrow: 1 }}
-          />
-          <Button
-            variant="contained"
-            onClick={() => handleBatchAccessRequest(patientAddress)}
-            disabled={isLoading}
-          >
-            Request Access
-          </Button>
-        </Box>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ color: '#1976D2', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Person /> Request Patient Record Access
+          </Typography>
+          <Box sx={{ 
+            mt: 3,
+            display: 'flex', 
+            gap: 2, 
+            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}>
+            <TextField
+              label="Patient Address"
+              value={patientAddress}
+              onChange={(e) => setPatientAddress(e.target.value)}
+              sx={{ flexGrow: 1 }}
+              variant="outlined"
+              placeholder="Enter patient's Ethereum address"
+              fullWidth
+            />
+            <Button
+              variant="contained"
+              onClick={() => handleBatchAccessRequest(patientAddress)}
+              disabled={isLoading}
+              sx={{
+                minWidth: { xs: '100%', sm: 'auto' },
+                py: 1.5,
+                px: 4,
+                borderRadius: 2
+              }}
+            >
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Request Access'}
+            </Button>
+          </Box>
+        </Paper>
       </TabPanel>
 
-      {/* Approved Records Tab */}
+      {/* 🟢 Approved Records Tab (Restored Code) */}
       <TabPanel value={tabValue} index={1}>
-        <Typography variant="h6" gutterBottom>
-          Approved Patient Records
+        <Typography variant="h6" gutterBottom sx={{ color: '#1976D2', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Description /> Approved Patient Records
         </Typography>
 
         {isLoading ? (
@@ -277,69 +323,128 @@ const PharmacyDashboard = () => {
             <CircularProgress />
           </Box>
         ) : patientRecords.length > 0 ? (
-          patientRecords.map((record) => (
-            <Card key={record.id} sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="subtitle1" gutterBottom>
-                  Prescription Record
-                </Typography>
-                <Typography>Type: {record.type}</Typography>
-                <Typography>Date: {new Date(record.timestamp * 1000).toLocaleDateString()}</Typography>
-                <Typography>Patient: {record.patientAddress}</Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleDownload(record)}
-                    sx={{ mr: 1 }}
-                  >
-                    View Record
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleProcessPrescription(record)}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? 'Processing...' : 'Process Prescription'}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          ))
+          <Box sx={{ 
+            display: 'grid', 
+            gap: 3,
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+            mt: 3
+          }}>
+            {patientRecords.map((record) => (
+              <Fade in={true} key={record.id}>
+                <Card sx={{ 
+                  borderRadius: 2,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom color="primary">
+                      Prescription Record
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                      <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Description fontSize="small" /> Type: {record.type}
+                      </Typography>
+                      <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AccessTime fontSize="small" /> 
+                        Date: {new Date(record.timestamp * 1000).toLocaleDateString()}
+                      </Typography>
+                      <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Person fontSize="small" /> 
+                        Patient: {record.patientAddress}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 2,
+                      flexDirection: { xs: 'column', sm: 'row' }
+                    }}>
+                      <Tooltip title="View prescription details">
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleDownload(record)}
+                          fullWidth
+                          sx={{ borderRadius: 2 }}
+                        >
+                          View Record
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="Mark prescription as processed">
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => handleProcessPrescription(record)}
+                          disabled={isProcessing}
+                          fullWidth
+                          sx={{ borderRadius: 2 }}
+                        >
+                          {isProcessing ? (
+                            <>
+                              <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                              Processing...
+                            </>
+                          ) : (
+                            'Process Prescription'
+                          )}
+                        </Button>
+                      </Tooltip>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
+            ))}
+          </Box>
         ) : (
-          <Typography color="text.secondary" sx={{ textAlign: 'center', p: 3 }}>
-            No accessible records found. Use the "Request Access" tab to request permission from patients.
-          </Typography>
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              textAlign: 'center', 
+              p: 4, 
+              mt: 3,
+              backgroundColor: '#f5f5f5',
+              borderRadius: 2
+            }}
+          >
+            <Typography color="text.secondary">
+              No accessible records found. Use the "Request Access" tab to request permission from patients.
+            </Typography>
+          </Paper>
         )}
       </TabPanel>
-
-      {/* File Downloader Dialog */}
-      <Dialog
-        open={openDownloadDialog}
-        onClose={() => handleDownloadDialog(false)}
-      >
-        <FileDownloader
-          onClose={() => handleDownloadDialog(false)}
-          ipfsHash={selectedRecord?.ipfsCid}
-          encryptedSymmetricKey={selectedRecord?.encryptedSymmetricKey}
-        />
-      </Dialog>
-
-      {/* Alert Component */}
-      <Snackbar
-        open={openAlert}
-        autoHideDuration={6000}
-        onClose={() => setOpenAlert(false)}
-      >
-        <Alert
-          onClose={() => setOpenAlert(false)}
-          severity={alertSeverity}
-          sx={{ width: '100%' }}
-        >
-          {alertMessage}
-        </Alert>
-      </Snackbar>
     </Box>
+
+    {/* Dialogs and Snackbars */}
+    <Dialog
+      open={openDownloadDialog}
+      onClose={() => handleDownloadDialog(false)}
+      maxWidth="sm"
+      fullWidth
+    >
+      <FileDownloader
+        onClose={() => handleDownloadDialog(false)}
+        ipfsHash={selectedRecord?.ipfsCid}
+        encryptedSymmetricKey={selectedRecord?.encryptedSymmetricKey}
+      />
+    </Dialog>
+
+    <Snackbar
+      open={openAlert}
+      autoHideDuration={6000}
+      onClose={() => setOpenAlert(false)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+    >
+      <Alert
+        onClose={() => setOpenAlert(false)}
+        severity={alertSeverity}
+        sx={{ width: '100%' }}
+        variant="filled"
+      >
+        {alertMessage}
+      </Alert>
+    </Snackbar>
+  </Box>
   );
 };
 
