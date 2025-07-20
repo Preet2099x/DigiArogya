@@ -429,13 +429,23 @@ contract EHRmain {
         returns (bool) 
     {
         require(
-            msg.sender == healthRecords[_ipfsCid].owner || // The patient (owner)
-            msg.sender == _user ||                       // The user themselves
-            msg.sender == systemOwner,                   // The system owner
+            msg.sender == healthRecords[_ipfsCid].owner || msg.sender == _user || msg.sender == systemOwner,
             "Not authorized to revoke this permission"
         );
         
+        // Set the permission flag to false
         permissions[healthRecords[_ipfsCid].owner][_ipfsCid][_user] = false;
+
+        // --- NEW LOGIC STARTS HERE ---
+        // Find the record in the provider's list and mark it as inactive.
+        for (uint i = 0; i < approvedRecords[_user].length; i++) {
+            if (keccak256(abi.encodePacked(approvedRecords[_user][i].ipfsCid)) == keccak256(abi.encodePacked(_ipfsCid))) {
+                approvedRecords[_user][i].status = false;
+                break; // Exit loop once found
+            }
+        }
+        // --- NEW LOGIC ENDS HERE ---
+
         emit PermissionRevoked(_ipfsCid, _user);
         return true;
     }
@@ -484,14 +494,29 @@ contract EHRmain {
     {
         require(_careProvider != address(0), "Invalid care provider address");
 
-        uint256 totalRecordsForCareProvider = approvedRecords[_careProvider].length;
-        approvedRecord[] memory records = new approvedRecord[](totalRecordsForCareProvider);
-
-        for (uint256 j = 0; j < approvedRecords[_careProvider].length; j++) {
-            approvedRecord memory record = approvedRecords[_careProvider][j];
-            records[j] = record;
+        // --- NEW LOGIC STARTS HERE ---
+        // First, count only the active records to create an array of the correct size
+        uint256 activeRecordsCount = 0;
+        for (uint i = 0; i < approvedRecords[_careProvider].length; i++) {
+            if (approvedRecords[_careProvider][i].status == true) {
+                activeRecordsCount++;
+            }
         }
-        return records;
+
+        // Create an array with the exact size of active records
+        approvedRecord[] memory activeRecords = new approvedRecord[](activeRecordsCount);
+        uint256 index = 0;
+
+        // Populate the new array with only active records
+        for (uint j = 0; j < approvedRecords[_careProvider].length; j++) {
+            if (approvedRecords[_careProvider][j].status == true) {
+                activeRecords[index] = approvedRecords[_careProvider][j];
+                index++;
+            }
+        }
+
+        return activeRecords;
+        // --- NEW LOGIC ENDS HERE ---
     }
 
     function getRecordsForResearcher(address requester, string memory recordId) 
