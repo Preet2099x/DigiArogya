@@ -43,6 +43,7 @@ contract EHRmain {
         REJECTED,
         EXPIRED
     }
+     enum RecordStatus { PENDING, COMPLETED, VALID, INVALID }
 
     // Structs for storing user data
     struct User {
@@ -59,7 +60,7 @@ contract EHRmain {
         DataType dataType;
         string encryptedSymmetricKey;
         uint256 timestamp;
-        bool isValid;
+        RecordStatus status;
         address provider;
     }
 
@@ -117,6 +118,7 @@ contract EHRmain {
     event PermissionRequested(bytes32 requestId, address indexed requester, address indexed owner);
     event PermissionGranted(bytes32 requestId, address indexed requester, address indexed owner);
     event PermissionRevoked(string indexed ipfsCid, address indexed revokedUser);
+    event RecordStatusUpdated(string indexed ipfsCid, RecordStatus newStatus);
     event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
     event ApprovedRecordAdded(
         address indexed owner,
@@ -151,9 +153,9 @@ contract EHRmain {
     }
 
     modifier recordExists(string memory _ipfsCid) {
-        require(healthRecords[_ipfsCid].isValid, "Record does not exist");
-        _;
-    }
+            require(healthRecords[_ipfsCid].owner != address(0), "Record does not exist");
+            _;
+        }
 
     modifier onlyAmbulance() {
         require(users[msg.sender].role == Role.AMBULANCE, "Only ambulance services can call this function");
@@ -214,7 +216,7 @@ contract EHRmain {
         return users[_userAddress].role;
     }
 
-    function addEHRData(
+function addEHRData(
         address _patientAddress,
         string memory _ipfsCid,
         DataType _dataType,
@@ -226,13 +228,16 @@ contract EHRmain {
         Role patientRole = checkUser(_patientAddress);
         require(patientRole == Role.PATIENT, "Invalid patient");
 
+        // Set initial status: PENDING for prescriptions, VALID for others
+        RecordStatus initialStatus = (_dataType == DataType.PRESCRIPTION) ? RecordStatus.PENDING : RecordStatus.VALID;
+
         healthRecords[_ipfsCid] = HealthRecord({
             owner: _patientAddress,
             ipfsCid: _ipfsCid,
             dataType: _dataType,
             encryptedSymmetricKey: _encryptedSymmetricKey,
             timestamp: block.timestamp,
-            isValid: true,
+            status: initialStatus, // Use the new status
             provider: msg.sender
         });
 
@@ -243,12 +248,15 @@ contract EHRmain {
         return true;
     }
 
-    function addPHRData(
+function addPHRData(
         string memory _ipfsCid,
         DataType _dataType,
         string calldata _encryptedSymmetricKey
     ) external onlyPatient returns (bool) {
         require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
+
+        // Set initial status: PENDING for prescriptions, VALID for others
+        RecordStatus initialStatus = (_dataType == DataType.PRESCRIPTION) ? RecordStatus.PENDING : RecordStatus.VALID;
 
         healthRecords[_ipfsCid] = HealthRecord({
             owner: msg.sender,
@@ -256,7 +264,7 @@ contract EHRmain {
             dataType: _dataType,
             encryptedSymmetricKey: _encryptedSymmetricKey,
             timestamp: block.timestamp,
-            isValid: true,
+            status: initialStatus, // Use the new status
             provider: msg.sender
         });
 
@@ -462,7 +470,7 @@ contract EHRmain {
         return records;
     }
 
-    function getHealthRecordByIpfs(string memory recordId)
+function getHealthRecordByIpfs(string memory recordId)
         public
         view
         returns (
@@ -471,7 +479,7 @@ contract EHRmain {
             DataType dataType,
             string memory encryptedSymmetricKey,
             uint256 timestamp,
-            bool isValid,
+            RecordStatus status, // <-- to this
             address provider
         )
     {
@@ -482,41 +490,45 @@ contract EHRmain {
             record.dataType,
             record.encryptedSymmetricKey,
             record.timestamp,
-            record.isValid,
+            record.status, // <-- and this
             record.provider
         );
     }
 
-    function getRecordsByCareProvider(address _careProvider) 
-        public 
-        view 
-        returns (approvedRecord[] memory) 
+function getRecordsByCareProvider(address _careProvider)
+        public
+        view
+        returns (approvedRecord[] memory)
     {
         require(_careProvider != address(0), "Invalid care provider address");
 
-        // --- NEW LOGIC STARTS HERE ---
-        // First, count only the active records to create an array of the correct size
-        uint256 activeRecordsCount = 0;
+        // First, count only active and PENDING prescription records
+        uint256 pendingPrescriptionCount = 0;
         for (uint i = 0; i < approvedRecords[_careProvider].length; i++) {
-            if (approvedRecords[_careProvider][i].status == true) {
-                activeRecordsCount++;
+            approvedRecord storage ar = approvedRecords[_careProvider][i];
+            HealthRecord storage hr = healthRecords[ar.ipfsCid];
+
+            if (ar.status == true && hr.dataType == DataType.PRESCRIPTION && hr.status == RecordStatus.PENDING) {
+                pendingPrescriptionCount++;
             }
         }
 
-        // Create an array with the exact size of active records
-        approvedRecord[] memory activeRecords = new approvedRecord[](activeRecordsCount);
+        // Create an array with the exact size
+        approvedRecord[] memory pendingPrescriptions = new approvedRecord[](pendingPrescriptionCount);
         uint256 index = 0;
 
-        // Populate the new array with only active records
+        // Populate the new array
         for (uint j = 0; j < approvedRecords[_careProvider].length; j++) {
-            if (approvedRecords[_careProvider][j].status == true) {
-                activeRecords[index] = approvedRecords[_careProvider][j];
+            approvedRecord storage ar = approvedRecords[_careProvider][j];
+            HealthRecord storage hr = healthRecords[ar.ipfsCid];
+
+            if (ar.status == true && hr.dataType == DataType.PRESCRIPTION && hr.status == RecordStatus.PENDING) {
+                pendingPrescriptions[index] = ar;
                 index++;
             }
         }
 
-        return activeRecords;
-        // --- NEW LOGIC ENDS HERE ---
+        return pendingPrescriptions;
     }
 
     function getRecordsForResearcher(address requester, string memory recordId) 
@@ -534,13 +546,13 @@ contract EHRmain {
         return record;
     }
 
-    function invalidateRecord(string memory _ipfsCid) 
-        external 
-        recordExists(_ipfsCid) 
-        onlySystemOwner 
-    {
-        healthRecords[_ipfsCid].isValid = false;
-    }
+    function invalidateRecord(string memory _ipfsCid)
+            external
+            recordExists(_ipfsCid)
+            onlySystemOwner
+        {
+            healthRecords[_ipfsCid].status = RecordStatus.INVALID; // <-- to this
+        }
 
     function getPermissionRequest(bytes32 requestId)
         public
@@ -666,6 +678,24 @@ contract EHRmain {
 
         emit PermissionGranted(_requestId, permissionRequests[_requestId].requester, msg.sender);
         return true;
+    }
+    function processPrescription(string memory _ipfsCid) external recordExists(_ipfsCid) {
+        HealthRecord storage recordToUpdate = healthRecords[_ipfsCid];
+
+        // Check if the caller is a registered pharmacy
+        require(users[msg.sender].role == Role.PHARMACY, "Caller is not a pharmacy");
+        // Check if the record is a prescription
+        require(recordToUpdate.dataType == DataType.PRESCRIPTION, "Not a prescription");
+        // Check if the prescription is pending
+        require(recordToUpdate.status == RecordStatus.PENDING, "Not a pending prescription");
+        // Check if the pharmacy has been granted access
+        require(permissions[recordToUpdate.owner][_ipfsCid][msg.sender], "Pharmacy does not have access");
+
+        // Update the status to COMPLETED
+        recordToUpdate.status = RecordStatus.COMPLETED;
+
+        // Emit an event to notify the frontend
+        emit RecordStatusUpdated(_ipfsCid, RecordStatus.COMPLETED);
     }
 }
 
