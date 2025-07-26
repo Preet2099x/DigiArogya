@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Box, Tab, Tabs, Typography, Button, Paper } from '@mui/material';
 import { LocalHospital, Hotel, MedicalServices } from '@mui/icons-material';
+import { ethers, BrowserProvider } from 'ethers';
+import contractABI from '../../contractABI.json';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
+  
   return (
     <div
       role="tabpanel"
@@ -20,37 +25,10 @@ function TabPanel(props) {
 }
 
 const HospitalDashboard = () => {
+  // 1. Hooks are defined first.
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
-  const [floors, setFloors] = useState([
-    {
-      id: 1,
-      name: 'Ground Floor',
-      rooms: {
-        general: { total: 20, available: 15 },
-        private: { total: 10, available: 7 },
-        icu: { total: 5, available: 3 }
-      }
-    },
-    {
-      id: 2,
-      name: 'First Floor',
-      rooms: {
-        general: { total: 25, available: 18 },
-        private: { total: 15, available: 10 },
-        icu: { total: 8, available: 5 }
-      }
-    },
-    {
-      id: 3,
-      name: 'Second Floor',
-      rooms: {
-        general: { total: 15, available: 12 },
-        private: { total: 12, available: 8 },
-        icu: { total: 6, available: 4 }
-      }
-    }
-  ]);
+  const [floors, setFloors] = useState([]);
   const [doctors, setDoctors] = useState([
     { id: 1, name: 'Dr. Sarah Johnson', specialty: 'Cardiology', isAvailable: true },
     { id: 2, name: 'Dr. Michael Chen', specialty: 'Neurology', isAvailable: true },
@@ -59,6 +37,45 @@ const HospitalDashboard = () => {
     { id: 5, name: 'Dr. Maria Garcia', specialty: 'Dermatology', isAvailable: false },
     { id: 6, name: 'Dr. Robert Taylor', specialty: 'Oncology', isAvailable: true }
   ]);
+
+  // 2. Functions are defined next.
+  const fetchBedData = async () => {
+    try {
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+        
+        const hospitalAddress = await signer.getAddress();
+        const floorIds = await contract.hospitalFloorIds(hospitalAddress);
+
+        const floorsData = await Promise.all(
+          floorIds.map(async (floorId) => {
+            const floorIdNum = Number(floorId);
+            const floorName = await contract.hospitalFloorNames(hospitalAddress, floorIdNum);
+            const roomTypes = await contract.hospitalRoomTypes(hospitalAddress, floorIdNum);
+            
+            const rooms = {};
+            await Promise.all(
+              roomTypes.map(async (type) => {
+                const roomInfo = await contract.getRoomInfo(hospitalAddress, floorIdNum, type);
+                rooms[type] = {
+                  total: Number(roomInfo.total),
+                  available: Number(roomInfo.available)
+                };
+              })
+            );
+            
+            return { id: floorIdNum, name: floorName, rooms: rooms };
+          })
+        );
+        
+        setFloors(floorsData);
+
+    } catch (error) {
+      console.error("Failed to fetch bed data:", error);
+      toast.error("Could not load bed data from the blockchain.");
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -75,29 +92,36 @@ const HospitalDashboard = () => {
     }));
   };
 
-  const updateBedCount = (floorId, roomType, change) => {
-    setFloors(prevFloors => {
-      return prevFloors.map(floor => {
-        if (floor.id === floorId) {
-          const newAvailable = floor.rooms[roomType].available + change;
-          if (newAvailable >= 0 && newAvailable <= floor.rooms[roomType].total) {
-            const updatedRooms = {
-              ...floor.rooms,
-              [roomType]: {
-                ...floor.rooms[roomType],
-                available: newAvailable
-              }
-            };
-            toast.success(`${floor.name} ${roomType} beds updated to ${newAvailable}`);
-            return { ...floor, rooms: updatedRooms };
-          }
-          toast.error(newAvailable < 0 ? 'No beds available to remove' : 'Cannot exceed total beds');
-          return floor;
-        }
-        return floor;
-      });
-    });
+  const updateBedCount = async (floorId, roomType, change) => {
+    const isIncrement = change > 0;
+    
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      
+      toast.info("Submitting transaction to update bed count...");
+
+      const tx = await contract.updateBedCount(floorId, roomType, isIncrement);
+      await tx.wait();
+      
+      toast.success("Bed count updated successfully!");
+      
+      await fetchBedData();
+
+    } catch (error) {
+        console.error("Error updating bed count:", error);
+        const reason = error.reason || "Transaction failed.";
+        toast.error(`Update failed: ${reason}`);
+    }
   };
+
+  // 3. useEffect hooks are defined last.
+  useEffect(() => {
+    if (tabValue === 1) {
+      fetchBedData();
+    }
+  }, [tabValue]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
@@ -164,42 +188,48 @@ const HospitalDashboard = () => {
             Bed Management
           </Typography>
           <div className="grid gap-6">
-            {floors.map(floor => (
-              <Paper key={floor.id} elevation={1} sx={{ p: 4, borderRadius: 2 }}>
-                <Typography variant="h6" sx={{ color: '#2c3e50', mb: 3 }}>{floor.name}</Typography>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {Object.entries(floor.rooms).map(([type, data]) => (
-                    <div key={type} className="p-4 border rounded-lg bg-gray-50">
-                      <Typography variant="subtitle1" sx={{ color: '#2c3e50', textTransform: 'capitalize', mb: 2 }}>
-                        {type} Rooms
-                      </Typography>
-                      <div className="flex justify-between items-center mb-3">
-                        <Typography variant="h4" sx={{ color: '#00796b' }}>{data.available}</Typography>
-                        <Typography variant="body2" sx={{ color: '#7f8c8d' }}>of {data.total}</Typography>
+            {floors.length > 0 ? (
+              floors.map(floor => (
+                <Paper key={floor.id} elevation={1} sx={{ p: 4, borderRadius: 2 }}>
+                  <Typography variant="h6" sx={{ color: '#2c3e50', mb: 3 }}>{floor.name}</Typography>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {Object.entries(floor.rooms).map(([type, data]) => (
+                      <div key={type} className="p-4 border rounded-lg bg-gray-50">
+                        <Typography variant="subtitle1" sx={{ color: '#2c3e50', textTransform: 'capitalize', mb: 2 }}>
+                          {type} Rooms
+                        </Typography>
+                        <div className="flex justify-between items-center mb-3">
+                          <Typography variant="h4" sx={{ color: '#00796b' }}>{data.available}</Typography>
+                          <Typography variant="body2" sx={{ color: '#7f8c8d' }}>of {data.total}</Typography>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            onClick={() => updateBedCount(floor.id, type, -1)}
+                          >
+                            -1
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="success"
+                            size="small"
+                            onClick={() => updateBedCount(floor.id, type, 1)}
+                          >
+                            +1
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => updateBedCount(floor.id, type, -1)}
-                        >
-                          -1
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="success"
-                          size="small"
-                          onClick={() => updateBedCount(floor.id, type, 1)}
-                        >
-                          +1
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Paper>
-            ))}
+                    ))}
+                  </div>
+                </Paper>
+              ))
+            ) : (
+              <Typography sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+                No floor data found for this hospital. Please add a floor to begin.
+              </Typography>
+            )}
           </div>
         </TabPanel>
 

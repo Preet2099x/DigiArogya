@@ -89,10 +89,23 @@ contract EHRmain {
         bool isIncentiveBased;
     }
 
+    
+
     // Struct to hold public and private keys
     struct KeyPair {
         string publicKeyForEncryption;
     }
+
+        struct RoomInfo {
+        uint256 total;
+        uint256 available;
+    }
+    
+    // Mappings to store bed data
+    mapping(address => mapping(uint256 => mapping(string => RoomInfo))) public hospitalBeds;
+    mapping(address => uint256[]) public hospitalFloorIds;
+    mapping(address => mapping(uint256 => string[])) public hospitalRoomTypes;
+    mapping(address => mapping(uint256 => string)) public hospitalFloorNames;
 
     // State variables
     mapping(address => User) public users;
@@ -119,6 +132,8 @@ contract EHRmain {
     event PermissionGranted(bytes32 requestId, address indexed requester, address indexed owner);
     event PermissionRevoked(string indexed ipfsCid, address indexed revokedUser);
     event RecordStatusUpdated(string indexed ipfsCid, RecordStatus newStatus);
+    event FloorAdded(address indexed hospital, uint256 floorId, string name);
+    event BedCountUpdated(address indexed hospital, uint256 floorId, string roomType, uint256 newAvailableCount);
     event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
     event ApprovedRecordAdded(
         address indexed owner,
@@ -159,6 +174,10 @@ contract EHRmain {
 
     modifier onlyAmbulance() {
         require(users[msg.sender].role == Role.AMBULANCE, "Only ambulance services can call this function");
+        _;
+    }
+    modifier onlyHospital() {
+        require(users[msg.sender].role == Role.HOSPITAL, "Only hospitals can call this function");
         _;
     }
 
@@ -696,6 +715,48 @@ function getRecordsByCareProvider(address _careProvider)
 
         // Emit an event to notify the frontend
         emit RecordStatusUpdated(_ipfsCid, RecordStatus.COMPLETED);
+    }
+
+    function addFloor(
+        string memory _floorName,
+        uint256 _floorId,
+        string[] memory _roomTypes,
+        uint256[] memory _totalBeds
+    ) external onlyHospital {
+        require(_roomTypes.length == _totalBeds.length, "Input arrays must have the same length");
+        require(hospitalRoomTypes[msg.sender][_floorId].length == 0, "Floor with this ID already exists");
+
+        hospitalFloorIds[msg.sender].push(_floorId);
+        hospitalFloorNames[msg.sender][_floorId] = _floorName;
+        
+        for (uint i = 0; i < _roomTypes.length; i++) {
+            hospitalBeds[msg.sender][_floorId][_roomTypes[i]] = RoomInfo({
+                total: _totalBeds[i],
+                available: _totalBeds[i]
+            });
+            hospitalRoomTypes[msg.sender][_floorId].push(_roomTypes[i]);
+        }
+
+        emit FloorAdded(msg.sender, _floorId, _floorName);
+    }
+
+    function updateBedCount(uint256 _floorId, string memory _roomType, bool _isIncrement) external onlyHospital {
+        RoomInfo storage room = hospitalBeds[msg.sender][_floorId][_roomType];
+        require(room.total > 0, "Room type does not exist on this floor");
+
+        if (_isIncrement) {
+            require(room.available < room.total, "Cannot exceed total beds");
+            room.available++;
+        } else {
+            require(room.available > 0, "No available beds to remove");
+            room.available--;
+        }
+
+        emit BedCountUpdated(msg.sender, _floorId, _roomType, room.available);
+    }
+
+    function getRoomInfo(address _hospitalAddress, uint256 _floorId, string memory _roomType) public view returns (RoomInfo memory) {
+        return hospitalBeds[_hospitalAddress][_floorId][_roomType];
     }
 }
 
