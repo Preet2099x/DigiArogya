@@ -10,10 +10,12 @@ import { addElectronicHealthRecord } from '../../services/transactions/electroni
 import { addPatientRecord } from '../../services/transactions/patientRecordAdd';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+
 const FileUploader = ({ onClose, onUpload, userRole }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [dataType, setDataType] = useState('PHR');
+    // <-- FIX 1: The state should hold the numeric value. Default to '1' for PHR.
+    const [dataType, setDataType] = useState('1'); 
     const [error, setError] = useState('');
     const [patientAddress, setPatientAddress] = useState('');
 
@@ -25,7 +27,8 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
     const handleDataTypeChange = (event) => setDataType(event.target.value);
 
     const handlePatientAddressChange = (event) => setPatientAddress(event.target.value);
-    const handleFileUpload = async () => {
+
+const handleFileUpload = async () => {
         if (!selectedFile || !dataType) {
             setError('Please select both a file and data type.');
             return;
@@ -37,43 +40,47 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
         }
 
         setLoading(true);
+        setError(''); // Clear previous errors
+
         try {
+            // Step 1: Encrypt the file
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const userPublicKey = await signer.getAddress();
             const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-            const publicKeyForEncryption = await contract.getKeyPair(userPublicKey);
+            const publicKeyForEncryption = await contract.getKeyPair(await signer.getAddress());
             const symmetricKey = CryptoJS.lib.WordArray.random(32).toString();
-            console.log('Symmetric key:', symmetricKey);
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
             const encryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
-            console.log(`Encrypted Symmetric Key from File Uploader is ${encryptedSymmetricKey}`);
-            const formData = new FormData();
-            const fileBlob = new Blob([JSON.stringify({
-                fileName: selectedFile.name,
-                fileType: selectedFile.type,
-                dataType: dataType,
-                encryptedContent: base64Content,
-                timestamp: Date.now()
-            })], { type: 'application/json' });
 
-            formData.append('file', fileBlob, 'metadata.json');
-            const uploadResponse = await uploadToIPFS({ file: fileBlob, userPublicKey, onUpload });
-            console.log(uploadResponse);
+            // Step 2: Create a blob FROM the actual encrypted content
+            const fileBlob = new Blob([base64Content], { type: 'text/plain' });
 
+            // Step 3: Upload the encrypted blob to IPFS using your function
+            const uploadResult = await uploadToIPFS({ file: fileBlob, userPublicKey: await signer.getAddress() });
+            
+            if (!uploadResult || !uploadResult.ipfsHash) {
+                throw new Error("Failed to upload to IPFS or get a valid hash.");
+            }
+
+            const ipfsCid = uploadResult.ipfsHash;
+            console.log("Uploaded to IPFS with CID:", ipfsCid);
+
+            // Step 4: Add the record's metadata to the blockchain
+            const dataTypeAsNumber = Number(dataType);
+            let tx;
             if (userRole === 'Patient') {
-                console.log('Uploading as Patient...');
-                const createTxn = await addPatientRecord(userPublicKey, dataType, uploadResponse, signer, contractAddress, contractABI.abi, onUpload, encryptedSymmetricKey);
-                console.log(createTxn);
+                tx = await contract.addPHRData(ipfsCid, dataTypeAsNumber, encryptedSymmetricKey);
+            } else { // Provider role
+                tx = await contract.addEHRData(patientAddress, ipfsCid, dataTypeAsNumber, encryptedSymmetricKey);
             }
-            if (userRole === 'Provider') {
-                console.log('Uploading as Provider...');
+            await tx.wait();
 
-                const createTxn = await addElectronicHealthRecord(userPublicKey, patientAddress, dataType, uploadResponse, encryptedSymmetricKey, signer, contractAddress, contractABI.abi, onUpload);
-                console.log(createTxn);
-            }
+            alert('Record uploaded successfully!');
+            onUpload(); // Refreshes the dashboard
+            onClose();  // Closes the dialog
+
         } catch (error) {
-            console.error('Error uploading file:', error);
+            console.error('Error during upload process:', error);
             setError(error.message || 'Error uploading file. Please try again.');
         } finally {
             setLoading(false);
@@ -100,11 +107,12 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
                         onChange={handleDataTypeChange}
                         label="Data Type"
                     >
-                        <MenuItem value="EHR">EHR (Electronic Health Record)</MenuItem>
-                        <MenuItem value="PHR">PHR (Personal Health Record)</MenuItem>
-                        <MenuItem value="LAB_RESULT">Lab Result</MenuItem>
-                        <MenuItem value="PRESCRIPTION">Prescription</MenuItem>
-                        <MenuItem value="IMAGING">Imaging</MenuItem>
+                        {/* <-- FIX 2: Use the integer values that match the Solidity enum */}
+                        <MenuItem value={'1'}>PHR (Personal Health Record)</MenuItem>
+                        <MenuItem value={'3'}>Prescription</MenuItem>
+                        <MenuItem value={'2'}>Lab Result</MenuItem>
+                        <MenuItem value={'4'}>Imaging</MenuItem>
+                        {/* We remove EHR (0) as it's typically created by providers, not uploaded by patients. */}
                     </Select>
                     <FormHelperText>Select the type of health data</FormHelperText>
                 </FormControl>

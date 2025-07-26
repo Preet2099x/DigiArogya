@@ -36,6 +36,14 @@ const dataTypeMap = {
   3: "Prescription", // Corresponds to PRESCRIPTION
   4: "Imaging", // Corresponds to IMAGING
 };
+
+const recordStatusMap = {
+    0: "Pending",
+    1: "Completed",
+    2: "Valid",
+    3: "Invalid"
+};
+
 const statusMap = {
   0: "Pending",
   1: "Approved",
@@ -74,13 +82,16 @@ const PatientDashboard = () => {
       // Fetch records using the user's address
       const records = await contract.getHealthRecordsByOwner(userPublicKey);
 
+       console.log("Raw records from contract:", records);
+
+
       // Update state with the fetched records directly from the blockchain
       const fetchedRecords = records.map((record) => ({
         ipfsCid: record.ipfsCid,
         dataType: dataTypeMap[record.dataType], // Map dataType enum to readable type
         provider: record.provider,
         timestamp: Number(record.timestamp), // Convert BigInt to Number
-        isValid: record.isValid,
+        status: recordStatusMap[Number(record.status)], // Use Number() to convert from BigInt
         encryptedSymmetricKey: record.encryptedSymmetricKey,
       }));
 
@@ -208,15 +219,12 @@ const PatientDashboard = () => {
     setOpenDownloadDialog(open);
   };
 
-  const handleNewRecord = (newRecord) => {
-    // After uploading, refetch the health records
-    setHealthRecords((prev) => [newRecord, ...prev]); // Add new record at the top
-    handleUploadDialog(false); // Close the upload dialog
-
-    // Re-fetch the updated records from the blockchain
-    fetchHealthRecords();
-  };
-
+  const handleNewRecord = () => {
+      // We no longer add the record manually.
+      // We just close the dialog and fetch the fresh list from the blockchain.
+      handleUploadDialog(false);
+      fetchHealthRecords();
+    };
   return (
     <Box
       sx={{
@@ -325,11 +333,15 @@ const PatientDashboard = () => {
                       </TableCell>
                       {/* Format date properly */}
                       <TableCell>
-                        <Chip
-                          label={record.isValid ? "Valid" : "Invalid"}
-                          color={record.isValid ? "success" : "error"}
-                          size="small"
-                        />
+                          <Chip
+                              label={record.status}
+                              color={
+                                  record.status === "Pending" ? "warning" :
+                                  record.status === "Completed" ? "success" :
+                                  record.status === "Valid" ? "primary" : "error"
+                              }
+                              size="small"
+                          />
                       </TableCell>
                       <TableCell>
                         <a

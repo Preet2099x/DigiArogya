@@ -212,54 +212,53 @@ const PharmacyDashboard = () => {
     setOpenDownloadDialog(open);
   };
 
-const handleProcessPrescription = async (clickedRecord) => {
-    // Set processing state only for the clicked card
-    setPatientRecords(prevRecords =>
-      prevRecords.map(r => 
-        r.id === clickedRecord.id ? { ...r, isProcessing: true } : r
-      )
-    );
-
-    try {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      const pharmacyAddress = await signer.getAddress();
-
-      // This call will now work because of the smart contract fix
-      const tx = await contract.revokePermission(clickedRecord.ipfsCid, pharmacyAddress);
-      
-      setAlertMessage('Processing transaction... please wait.');
-      setAlertSeverity('info');
-      setOpenAlert(true);
-      
-      await tx.wait();
-
-      // Remove the processed record from the UI
-      setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== clickedRecord.ipfsCid));
-
-      setAlertMessage('Prescription processed successfully!');
-      setAlertSeverity('success');
-      setOpenAlert(true);
-
-    } catch (error) {
-      console.error('Error processing prescription:', error);
-      let errorMessage = 'Failed to process prescription: ' + (error.reason || error.message);
-      if (error.code === 'ACTION_REJECTED') {
-          errorMessage = 'Transaction was rejected by user.';
-      }
-      setAlertMessage(errorMessage);
-      setAlertSeverity('error');
-      setOpenAlert(true);
-      
-      // Reset processing state on failure
+  const handleProcessPrescription = async (clickedRecord) => {
+      // Set a loading state for the specific card being processed
       setPatientRecords(prevRecords =>
-        prevRecords.map(r => 
-          r.id === clickedRecord.id ? { ...r, isProcessing: false } : r
+        prevRecords.map(r =>
+          r.id === clickedRecord.id ? { ...r, isProcessing: true } : r
         )
       );
-    } 
-};
+
+      try {
+          const provider = new BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+
+          // Call the new smart contract function
+          const tx = await contract.processPrescription(clickedRecord.ipfsCid);
+
+          setAlertMessage('Processing transaction... please wait for confirmation.');
+          setAlertSeverity('info');
+          setOpenAlert(true);
+
+          await tx.wait(); // Wait for the transaction to be mined
+
+          // On success, remove the record from the UI
+          setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== clickedRecord.ipfsCid));
+
+          setAlertMessage('Prescription processed successfully!');
+          setAlertSeverity('success');
+          setOpenAlert(true);
+
+      } catch (error) {
+          console.error('Error processing prescription:', error);
+          let errorMessage = 'Failed to process prescription: ' + (error.reason || error.message);
+          if (error.code === 'ACTION_REJECTED') {
+              errorMessage = 'Transaction was rejected by the user.';
+          }
+          setAlertMessage(errorMessage);
+          setAlertSeverity('error');
+          setOpenAlert(true);
+
+          // Reset the loading state for the card on failure
+          setPatientRecords(prevRecords =>
+              prevRecords.map(r =>
+                  r.id === clickedRecord.id ? { ...r, isProcessing: false } : r
+              )
+          );
+      }
+  };
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
      <Box sx={{ 
@@ -395,21 +394,21 @@ const handleProcessPrescription = async (clickedRecord) => {
                       </Tooltip>
                       <Tooltip title="Mark prescription as processed">
                         <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => handleProcessPrescription(record)}
-                          disabled={record.isProcessing}
-                          fullWidth
-                          sx={{ borderRadius: 2 }}
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleProcessPrescription(record)} // This should call our new function
+                            disabled={record.isProcessing}
+                            fullWidth
+                            sx={{ borderRadius: 2 }}
                         >
-                          {record.isProcessing ? (
-                            <>
-                              <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                              Processing...
-                            </>
-                          ) : (
-                            'Process Prescription'
-                          )}
+                            {record.isProcessing ? (
+                                <>
+                                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                                    Processing...
+                                </>
+                            ) : (
+                                'Process Prescription'
+                            )}
                         </Button>
                       </Tooltip>
                     </Box>
