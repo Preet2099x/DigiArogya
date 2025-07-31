@@ -1,10 +1,14 @@
-import { Add, CalendarMonth } from "@mui/icons-material";
+import { Add, CalendarMonth, ExpandMore, PersonSearch } from "@mui/icons-material";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Card,
   Chip,
   Dialog,
+  Paper,
   Tab,
   Table,
   TableBody,
@@ -28,28 +32,18 @@ import { approvePermission } from "../../services/transactions/approvingPermissi
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
-// Mapping of dataType enum to human-readable types
-const dataTypeMap = {
-  0: "EHR",
-  1: "PHR",
-  2: "Lab Results",
-  3: "Prescription",
-  4: "Imaging",
-};
+const dataTypeMap = { 0: "EHR", 1: "PHR", 2: "Lab Results", 3: "Prescription", 4: "Imaging" };
+const recordStatusMap = { 0: "Pending", 1: "Completed", 2: "Valid", 3: "Invalid" };
+const statusMap = { 0: "Pending", 1: "Approved", 2: "Rejected", 3: "Completed" };
 
-const recordStatusMap = {
-    0: "Pending",
-    1: "Completed",
-    2: "Valid",
-    3: "Invalid"
-};
-
-const statusMap = {
-  0: "Pending",
-  1: "Approved",
-  2: "Rejected",
-  3: "Completed",
-};
+// Mock data for the "Find a Doctor" feature
+const specialties = [
+  { name: 'Cardiology', doctors: [{ id: 1, name: 'Dr. Sarah Johnson' }, { id: 2, name: 'Dr. Robert Taylor' }] },
+  { name: 'Neurology', doctors: [{ id: 3, name: 'Dr. Michael Chen' }] },
+  { name: 'Pediatrics', doctors: [{ id: 4, name: 'Dr. Emily Williams' }] },
+  { name: 'Orthopedics', doctors: [{ id: 5, name: 'Dr. James Wilson' }] },
+  { name: 'Dermatology', doctors: [{ id: 6, name: 'Dr. Maria Garcia' }] },
+];
 
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -74,8 +68,6 @@ const PatientDashboard = () => {
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
       const records = await contract.getHealthRecordsByOwner(userPublicKey);
 
-      console.log("Raw records from contract:", records);
-
       const fetchedRecords = records.map((record) => ({
         ipfsCid: record.ipfsCid,
         dataType: dataTypeMap[record.dataType],
@@ -94,7 +86,7 @@ const PatientDashboard = () => {
   const fetchPermissionRequests = async () => {
     try {
       if (typeof window.ethereum === "undefined") {
-        console.error("Ethereum provider is not available. Please install MetaMask or a similar wallet.");
+        console.error("Ethereum provider is not available.");
         return;
       }
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -123,23 +115,21 @@ const PatientDashboard = () => {
 
   const fetchBookings = async () => {
     try {
-        const provider = new BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-        const patientAddress = await signer.getAddress();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      const patientAddress = await signer.getAddress();
+      const fetchedBookings = await contract.getAppointmentsByPatient(patientAddress);
 
-        const fetchedBookings = await contract.getAppointmentsByPatient(patientAddress);
-
-        const processedBookings = fetchedBookings.map(booking => ({
-            hospitalName: booking.hospitalName,
-            appointmentType: `${booking.roomType} Room`,
-            date: new Date(Number(booking.bookingDate) * 1000)
-        }));
-        
-        setBookings(processedBookings.reverse());
+      const processedBookings = fetchedBookings.map(booking => ({
+          hospitalName: booking.hospitalName,
+          appointmentType: `${booking.roomType} Room`,
+          date: new Date(Number(booking.bookingDate) * 1000)
+      }));
+      setBookings(processedBookings.reverse());
     } catch (error) {
-        console.error("Error fetching appointments:", error);
-        toast.error("Could not fetch appointments.");
+      console.error("Error fetching appointments:", error);
+      toast.error("Could not fetch appointments.");
     }
   };
 
@@ -148,23 +138,21 @@ const PatientDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (tabValue === 1) {
-      fetchPermissionRequests();
-    } else if (tabValue === 2) {
-      fetchBookings();
-    }
+    if (tabValue === 1) fetchPermissionRequests();
+    else if (tabValue === 2) fetchBookings();
   }, [tabValue]);
+
+  const handleBookDoctor = (doctor) => {
+    toast.success(`Appointment request sent for Dr. ${doctor.name}.`);
+  };
 
   const handleRequestAction = async (requestId, action) => {
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      if (action === "approve") {
-        await contract.approvePermissionRequest(requestId);
-      } else if (action === "decline") {
-        await contract.declinePermissionRequest(requestId);
-      }
+      if (action === "approve") await contract.approvePermissionRequest(requestId);
+      else if (action === "decline") await contract.declinePermissionRequest(requestId);
       fetchPermissionRequests();
     } catch (error) {
       console.error(`Error ${action}ing request:`, error);
@@ -208,6 +196,7 @@ const PatientDashboard = () => {
           <Tab label="Health Records" sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
           <Tab label="Permission Requests" sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
           <Tab label="Bookings & Appointments"  sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
+          <Tab label="Find a Doctor"  sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
         </Tabs>
 
         {tabValue === 0 && (
@@ -219,15 +208,12 @@ const PatientDashboard = () => {
             <TableContainer component={Card} sx={{ boxShadow: 3 }}>
               <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Type</TableCell><TableCell>Provider</TableCell><TableCell>Date</TableCell><TableCell>Status</TableCell><TableCell>IPFS CID</TableCell><TableCell>Encrypted Symmetric Key</TableCell><TableCell>Actions</TableCell>
-                  </TableRow>
+                  <TableRow><TableCell>Type</TableCell><TableCell>Provider</TableCell><TableCell>Date</TableCell><TableCell>Status</TableCell><TableCell>IPFS CID</TableCell><TableCell>Encrypted Symmetric Key</TableCell><TableCell>Actions</TableCell></TableRow>
                 </TableHead>
                 <TableBody>
                   {healthRecords.map((record, index) => (
                     <TableRow key={index}>
-                      <TableCell>{record.dataType}</TableCell>
-                      <TableCell>{record.provider}</TableCell>
+                      <TableCell>{record.dataType}</TableCell><TableCell>{record.provider}</TableCell>
                       <TableCell>{record.timestamp ? format(new Date(record.timestamp * 1000), "MM/dd/yyyy") : "Invalid Date"}</TableCell>
                       <TableCell><Chip label={record.status} color={record.status === "Pending" ? "warning" : record.status === "Completed" ? "success" : record.status === "Valid" ? "primary" : "error"} size="small" /></TableCell>
                       <TableCell><a href={`https://ipfs.io/ipfs/${record.ipfsCid}`} target="_blank" rel="noopener noreferrer">{record.ipfsCid}</a></TableCell>
@@ -245,9 +231,7 @@ const PatientDashboard = () => {
           <TableContainer component={Card} sx={{ boxShadow: 3 }}>
             <Table>
               <TableHead>
-                <TableRow>
-                  <TableCell>Requester</TableCell><TableCell>Request ID</TableCell><TableCell>IPFS CID</TableCell><TableCell>Status</TableCell><TableCell>Request Date</TableCell><TableCell>Expiry Date</TableCell><TableCell>Incentive Amount</TableCell><TableCell>Incentive-Based</TableCell><TableCell>Actions</TableCell>
-                </TableRow>
+                <TableRow><TableCell>Requester</TableCell><TableCell>Request ID</TableCell><TableCell>IPFS CID</TableCell><TableCell>Status</TableCell><TableCell>Request Date</TableCell><TableCell>Expiry Date</TableCell><TableCell>Incentive Amount</TableCell><TableCell>Incentive-Based</TableCell><TableCell>Actions</TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {permissionRequests.map((request) => (
@@ -256,20 +240,8 @@ const PatientDashboard = () => {
                     <TableCell><Chip label={request.status} color={request.status === "Pending" ? "warning" : "success"} size="small" /></TableCell>
                     <TableCell>{request.requestDate ? format(new Date(request.requestDate * 1000), "MM/dd/yyyy") : "Invalid Date"}</TableCell>
                     <TableCell>{request.expiryDate ? format(new Date(request.expiryDate * 1000), "MM/dd/yyyy") : "Invalid Date"}</TableCell>
-                    <TableCell>{request.incentiveAmount} ETH</TableCell>
-                    <TableCell>{request.isIncentiveBased ? "Yes" : "No"}</TableCell>
-                    <TableCell>
-                      {request.status === "Pending" && (
-                        <>
-                          {request.ipfsCid === "" ? (
-                            <Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => handleBatchAccessApproval(request.requestId)}>Approve Batch Access</Button>
-                          ) : (
-                            <Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => { setSelectedRequestId(request.requestId); setOpenPrivateKeyDialog(true); }}>Approve</Button>
-                          )}
-                          <Button variant="outlined" size="small" color="error" onClick={() => handleRequestAction(request.requestId, "decline")}>Decline</Button>
-                        </>
-                      )}
-                    </TableCell>
+                    <TableCell>{request.incentiveAmount} ETH</TableCell><TableCell>{request.isIncentiveBased ? "Yes" : "No"}</TableCell>
+                    <TableCell>{request.status === "Pending" && (<>{request.ipfsCid === "" ? (<Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => handleBatchAccessApproval(request.requestId)}>Approve Batch Access</Button>) : (<Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => { setSelectedRequestId(request.requestId); setOpenPrivateKeyDialog(true); }}>Approve</Button>)}<Button variant="outlined" size="small" color="error" onClick={() => handleRequestAction(request.requestId, "decline")}>Decline</Button></>)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -286,29 +258,36 @@ const PatientDashboard = () => {
                   <TableRow><TableCell>Hospital</TableCell><TableCell>Appointment Type</TableCell><TableCell>Date</TableCell></TableRow>
                 </TableHead>
                 <TableBody>
-                  {bookings.length > 0 ? (
-                    bookings.map((booking, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{booking.hospitalName}</TableCell>
-                      <TableCell>{booking.appointmentType}</TableCell>
-                      <TableCell>{format(booking.date, "PPP p")}</TableCell>
-                    </TableRow>
-                    ))
-                  ) : (
-                    <TableRow><TableCell colSpan={3} align="center">No appointments found.</TableCell></TableRow>
-                  )}
+                  {bookings.length > 0 ? (bookings.map((booking, index) => (
+                    <TableRow key={index}><TableCell>{booking.hospitalName}</TableCell><TableCell>{booking.appointmentType}</TableCell><TableCell>{format(booking.date, "PPP p")}</TableCell></TableRow>
+                  ))) : (<TableRow><TableCell colSpan={3} align="center">No appointments found.</TableCell></TableRow>)}
                 </TableBody>
               </Table>
             </TableContainer>
           </Box>
         )}
 
-        <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}>
-          <FileUploader onClose={() => handleUploadDialog(false)} onUpload={handleNewRecord} userRole={"Patient"} />
-        </Dialog>
-        <Dialog open={openDownloadDialog} onClose={() => handleDownloadDialog(false)}>
-          <FileDownloader onClose={() => handleDownloadDialog(false)} ipfsHash={hashForDownload} encryptedSymmetricKey={encryptedSymmetricKey} recordInfo={{ ipfsCid: hashForDownload, encryptedSymmetricKey: encryptedSymmetricKey }} />
-        </Dialog>
+        {tabValue === 3 && (
+          <Box>
+            <Typography variant="h5" fontWeight="bold" color="text.primary" mb={2}>Find a Doctor by Specialty</Typography>
+            {specialties.map((specialty, index) => (
+              <Accordion key={index} sx={{ mb: 1 }}>
+                <AccordionSummary expandIcon={<ExpandMore />}><Typography fontWeight="medium">{specialty.name}</Typography></AccordionSummary>
+                <AccordionDetails>
+                  {specialty.doctors.map((doctor) => (
+                    <Paper key={doctor.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }} variant="outlined">
+                      <Typography>{doctor.name}</Typography>
+                      <Button variant="contained" size="small" onClick={() => handleBookDoctor(doctor)} sx={{ backgroundColor: "#00796b" }}>Book Doctor</Button>
+                    </Paper>
+                  ))}
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Box>
+        )}
+
+        <Dialog open={openUploadDialog} onClose={() => handleUploadDialog(false)}><FileUploader onClose={() => handleUploadDialog(false)} onUpload={handleNewRecord} userRole={"Patient"} /></Dialog>
+        <Dialog open={openDownloadDialog} onClose={() => handleDownloadDialog(false)}><FileDownloader onClose={() => handleDownloadDialog(false)} ipfsHash={hashForDownload} encryptedSymmetricKey={encryptedSymmetricKey} recordInfo={{ ipfsCid: hashForDownload, encryptedSymmetricKey: encryptedSymmetricKey }} /></Dialog>
         <Dialog open={openPrivateKeyDialog} onClose={() => setOpenPrivateKeyDialog(false)}>
           <Box p={3} width={400}>
             <Typography variant="h6" mb={2}>Enter Private Key</Typography>
