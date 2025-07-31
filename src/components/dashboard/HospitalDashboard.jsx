@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Box, Tab, Tabs, Typography, Button, Paper } from '@mui/material';
+import { Box, Tab, Tabs, Typography, Button, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@mui/material';
 import { LocalHospital, Hotel, MedicalServices } from '@mui/icons-material';
 
 function TabPanel(props) {
@@ -22,6 +22,9 @@ function TabPanel(props) {
 const HospitalDashboard = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState(null);
+  const [patientInfo, setPatientInfo] = useState({ name: '', age: '', address: '' });
   const [floors, setFloors] = useState([
     {
       id: 1,
@@ -38,7 +41,7 @@ const HospitalDashboard = () => {
       rooms: {
         general: { total: 25, available: 18 },
         private: { total: 15, available: 10 },
-        icu: { total: 8, available: 5 }
+        icu: { total: 8, available: 0 }
       }
     },
     {
@@ -63,6 +66,32 @@ const HospitalDashboard = () => {
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
+  
+  const handleOpenDialog = (floor, roomType) => {
+    setBookingDetails({ floorName: floor.name, roomType: roomType });
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setPatientInfo({ name: '', age: '', address: '' }); // Reset form
+    setBookingDetails(null);
+  };
+
+  const handlePatientInfoChange = (e) => {
+    setPatientInfo({
+      ...patientInfo,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleConfirmBooking = () => {
+    // Assumption: In a real app, this would trigger a blockchain transaction.
+    // For now, it just confirms the booking and shows a notification.
+    toast.success(`Bed booked for ${patientInfo.name} in a ${bookingDetails.roomType} room on the ${bookingDetails.floorName}.`);
+    console.log("Booking Confirmed:", { patientInfo, bookingDetails });
+    handleCloseDialog();
+  };
 
   const toggleDoctorAvailability = (doctorId) => {
     setDoctors(doctors.map(doctor => {
@@ -75,6 +104,7 @@ const HospitalDashboard = () => {
     }));
   };
 
+  // This function is no longer used by the UI but kept for potential future use
   const updateBedCount = (floorId, roomType, change) => {
     setFloors(prevFloors => {
       return prevFloors.map(floor => {
@@ -177,22 +207,15 @@ const HospitalDashboard = () => {
                         <Typography variant="h4" sx={{ color: '#00796b' }}>{data.available}</Typography>
                         <Typography variant="body2" sx={{ color: '#7f8c8d' }}>of {data.total}</Typography>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex justify-center">
                         <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => updateBedCount(floor.id, type, -1)}
-                        >
-                          -1
-                        </Button>
-                        <Button
-                          variant="outlined"
+                          variant="contained"
                           color="success"
                           size="small"
-                          onClick={() => updateBedCount(floor.id, type, 1)}
+                          disabled={data.available === 0}
+                          onClick={() => handleOpenDialog(floor, type)}
                         >
-                          +1
+                          {data.available > 0 ? 'Book Bed' : 'Unavailable'}
                         </Button>
                       </div>
                     </div>
@@ -224,6 +247,53 @@ const HospitalDashboard = () => {
           </div>
         </TabPanel>
       </Box>
+
+      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+        <DialogTitle>Book a Bed</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Please enter the patient's details to book a {bookingDetails?.roomType} bed on the {bookingDetails?.floorName}.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            name="name"
+            label="Patient Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={patientInfo.name}
+            onChange={handlePatientInfoChange}
+          />
+          <TextField
+            margin="dense"
+            id="age"
+            name="age"
+            label="Patient Age"
+            type="number"
+            fullWidth
+            variant="standard"
+            value={patientInfo.age}
+            onChange={handlePatientInfoChange}
+          />
+          <TextField
+            margin="dense"
+            id="address"
+            name="address"
+            label="Patient Address"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={patientInfo.address}
+            onChange={handlePatientInfoChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleConfirmBooking} variant="contained" color="success">Confirm Booking</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
