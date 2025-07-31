@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Box, Tab, Tabs, Typography, Button, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@mui/material';
+import { Box, Tab, Tabs, Typography, Button, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, CircularProgress } from '@mui/material';
 import { LocalHospital, Hotel, MedicalServices } from '@mui/icons-material';
+import { BrowserProvider, ethers } from 'ethers';
+import contractABI from '../../contractABI.json';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -25,6 +29,7 @@ const HospitalDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [patientInfo, setPatientInfo] = useState({ name: '', age: '', address: '' });
+  const [isBooking, setIsBooking] = useState(false);
   const [floors, setFloors] = useState([
     {
       id: 1,
@@ -68,7 +73,7 @@ const HospitalDashboard = () => {
   };
   
   const handleOpenDialog = (floor, roomType) => {
-    setBookingDetails({ floorName: floor.name, roomType: roomType });
+    setBookingDetails({ floorId: floor.id, floorName: floor.name, roomType: roomType });
     setDialogOpen(true);
   };
 
@@ -85,12 +90,33 @@ const HospitalDashboard = () => {
     });
   };
 
-  const handleConfirmBooking = () => {
-    // Assumption: In a real app, this would trigger a blockchain transaction.
-    // For now, it just confirms the booking and shows a notification.
-    toast.success(`Bed booked for ${patientInfo.name} in a ${bookingDetails.roomType} room on the ${bookingDetails.floorName}.`);
-    console.log("Booking Confirmed:", { patientInfo, bookingDetails });
-    handleCloseDialog();
+  const handleConfirmBooking = async () => {
+    if (!patientInfo.address || !ethers.isAddress(patientInfo.address)) {
+        toast.error("Please enter a valid patient wallet address.");
+        return;
+    }
+    setIsBooking(true);
+    try {
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+        
+        const hospitalName = "Central City Hospital"; 
+        
+        const tx = await contract.bookAppointment(patientInfo.address, hospitalName, bookingDetails.roomType);
+        toast.info("Processing booking transaction...");
+        await tx.wait();
+
+        updateBedCount(bookingDetails.floorId, bookingDetails.roomType, -1);
+        
+        toast.success(`Bed booked for ${patientInfo.name} in a ${bookingDetails.roomType} room.`);
+        handleCloseDialog();
+    } catch (error) {
+        console.error("Error booking appointment:", error);
+        toast.error(error?.reason || "Failed to book appointment.");
+    } finally {
+        setIsBooking(false);
+    }
   };
 
   const toggleDoctorAvailability = (doctorId) => {
@@ -104,7 +130,6 @@ const HospitalDashboard = () => {
     }));
   };
 
-  // This function is no longer used by the UI but kept for potential future use
   const updateBedCount = (floorId, roomType, change) => {
     setFloors(prevFloors => {
       return prevFloors.map(floor => {
@@ -118,10 +143,8 @@ const HospitalDashboard = () => {
                 available: newAvailable
               }
             };
-            toast.success(`${floor.name} ${roomType} beds updated to ${newAvailable}`);
             return { ...floor, rooms: updatedRooms };
           }
-          toast.error(newAvailable < 0 ? 'No beds available to remove' : 'Cannot exceed total beds');
           return floor;
         }
         return floor;
@@ -281,7 +304,7 @@ const HospitalDashboard = () => {
             margin="dense"
             id="address"
             name="address"
-            label="Patient Address"
+            label="Patient Wallet Address"
             type="text"
             fullWidth
             variant="standard"
@@ -290,8 +313,10 @@ const HospitalDashboard = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleConfirmBooking} variant="contained" color="success">Confirm Booking</Button>
+          <Button onClick={handleCloseDialog} disabled={isBooking}>Cancel</Button>
+          <Button onClick={handleConfirmBooking} variant="contained" color="success" disabled={isBooking}>
+            {isBooking ? <CircularProgress size={24} color="inherit" /> : 'Confirm Booking'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

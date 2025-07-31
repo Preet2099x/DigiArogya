@@ -94,6 +94,15 @@ abstract contract EHRStorage {
         string publicKeyForEncryption;
     }
 
+    // Struct for hospital appointments
+    struct Appointment {
+        address patientAddress;
+        address hospitalAddress;
+        string hospitalName;
+        string roomType;
+        uint256 bookingDate;
+    }
+
     // State variables
     mapping(address => User) public users;
     mapping(string => HealthRecord) public healthRecords;
@@ -104,6 +113,7 @@ abstract contract EHRStorage {
     mapping(address => string[]) public ownerToHealthRecords;
     mapping(address => KeyPair) public userKeys;
     mapping(address => mapping(address => bool)) public emergencyAccesses;
+    mapping(address => Appointment[]) public patientAppointments; // New state for appointments
 
     // System variables
     address public systemOwner;
@@ -130,4 +140,11 @@ abstract contract EHRStorage {
         uint256 expiryDate,
         bool status
     );
+    event AppointmentBooked(
+        address indexed patientAddress,
+        address indexed hospitalAddress,
+        string hospitalName,
+        string roomType,
+        uint256 bookingDate
+    ); // New event for bookings
 }

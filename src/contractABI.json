@@ -11,6 +11,43 @@
         {
           "indexed": true,
           "internalType": "address",
+          "name": "patientAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "hospitalAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "hospitalName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "roomType",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "bookingDate",
+          "type": "uint256"
+        }
+      ],
+      "name": "AppointmentBooked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "owner",
           "type": "address"
         },
@@ -28,7 +65,7 @@
         },
         {
           "indexed": false,
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         },
@@ -102,7 +139,7 @@
         },
         {
           "indexed": false,
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         }
@@ -190,7 +227,7 @@
         },
         {
           "indexed": false,
-          "internalType": "enum EHRmain.RecordStatus",
+          "internalType": "enum EHRStorage.RecordStatus",
           "name": "newStatus",
           "type": "uint8"
         }
@@ -209,7 +246,7 @@
         },
         {
           "indexed": false,
-          "internalType": "enum EHRmain.Role",
+          "internalType": "enum EHRStorage.Role",
           "name": "role",
           "type": "uint8"
         }
@@ -248,7 +285,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         },
@@ -274,7 +311,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -302,7 +340,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         },
@@ -328,7 +366,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -352,7 +391,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -375,7 +415,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         },
@@ -390,7 +430,7 @@
           "type": "uint256"
         },
         {
-          "internalType": "enum EHRmain.RecordStatus",
+          "internalType": "enum EHRStorage.RecordStatus",
           "name": "status",
           "type": "uint8"
         },
@@ -401,7 +441,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -425,7 +466,53 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "patientAppointments",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "patientAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "hospitalAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "hospitalName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "roomType",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "bookingDate",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -444,7 +531,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -477,12 +565,12 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.PermissionType",
+          "internalType": "enum EHRStorage.PermissionType",
           "name": "permissionType",
           "type": "uint8"
         },
         {
-          "internalType": "enum EHRmain.RequestStatus",
+          "internalType": "enum EHRStorage.RequestStatus",
           "name": "status",
           "type": "uint8"
         },
@@ -508,7 +596,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -537,7 +626,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -550,7 +640,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -563,7 +654,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -576,7 +668,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -589,7 +682,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -608,7 +702,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -626,7 +721,7 @@
           "type": "address"
         },
         {
-          "internalType": "enum EHRmain.Role",
+          "internalType": "enum EHRStorage.Role",
           "name": "role",
           "type": "uint8"
         },
@@ -642,12 +737,13 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
         {
-          "internalType": "enum EHRmain.Role",
+          "internalType": "enum EHRStorage.Role",
           "name": "_role",
           "type": "uint8"
         },
@@ -690,7 +786,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -703,13 +800,14 @@
       "name": "checkUser",
       "outputs": [
         {
-          "internalType": "enum EHRmain.Role",
+          "internalType": "enum EHRStorage.Role",
           "name": "",
           "type": "uint8"
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -724,7 +822,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "_dataType",
           "type": "uint8"
         },
@@ -753,7 +851,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "_dataType",
           "type": "uint8"
         },
@@ -792,7 +890,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "_dataType",
           "type": "uint8"
         },
@@ -830,7 +928,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.PermissionType",
+          "internalType": "enum EHRStorage.PermissionType",
           "name": "_permissionType",
           "type": "uint8"
         }
@@ -859,7 +957,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.PermissionType",
+          "internalType": "enum EHRStorage.PermissionType",
           "name": "_permissionType",
           "type": "uint8"
         }
@@ -873,7 +971,8 @@
         }
       ],
       "stateMutability": "payable",
-      "type": "function"
+      "type": "function",
+      "payable": true
     },
     {
       "inputs": [
@@ -908,12 +1007,12 @@
               "type": "string"
             },
             {
-              "internalType": "enum EHRmain.PermissionType",
+              "internalType": "enum EHRStorage.PermissionType",
               "name": "permissionType",
               "type": "uint8"
             },
             {
-              "internalType": "enum EHRmain.RequestStatus",
+              "internalType": "enum EHRStorage.RequestStatus",
               "name": "status",
               "type": "uint8"
             },
@@ -938,13 +1037,14 @@
               "type": "bool"
             }
           ],
-          "internalType": "struct EHRmain.PermissionRequest[]",
+          "internalType": "struct EHRStorage.PermissionRequest[]",
           "name": "",
           "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1012,7 +1112,7 @@
               "type": "string"
             },
             {
-              "internalType": "enum EHRmain.DataType",
+              "internalType": "enum EHRStorage.DataType",
               "name": "dataType",
               "type": "uint8"
             },
@@ -1027,7 +1127,7 @@
               "type": "uint256"
             },
             {
-              "internalType": "enum EHRmain.RecordStatus",
+              "internalType": "enum EHRStorage.RecordStatus",
               "name": "status",
               "type": "uint8"
             },
@@ -1037,13 +1137,14 @@
               "type": "address"
             }
           ],
-          "internalType": "struct EHRmain.HealthRecord[]",
+          "internalType": "struct EHRStorage.HealthRecord[]",
           "name": "",
           "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1066,7 +1167,7 @@
           "type": "string"
         },
         {
-          "internalType": "enum EHRmain.DataType",
+          "internalType": "enum EHRStorage.DataType",
           "name": "dataType",
           "type": "uint8"
         },
@@ -1081,7 +1182,7 @@
           "type": "uint256"
         },
         {
-          "internalType": "enum EHRmain.RecordStatus",
+          "internalType": "enum EHRStorage.RecordStatus",
           "name": "status",
           "type": "uint8"
         },
@@ -1092,7 +1193,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1122,7 +1224,7 @@
               "type": "string"
             },
             {
-              "internalType": "enum EHRmain.DataType",
+              "internalType": "enum EHRStorage.DataType",
               "name": "dataType",
               "type": "uint8"
             },
@@ -1147,13 +1249,14 @@
               "type": "bool"
             }
           ],
-          "internalType": "struct EHRmain.approvedRecord[]",
+          "internalType": "struct EHRStorage.approvedRecord[]",
           "name": "",
           "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1188,7 +1291,7 @@
               "type": "string"
             },
             {
-              "internalType": "enum EHRmain.DataType",
+              "internalType": "enum EHRStorage.DataType",
               "name": "dataType",
               "type": "uint8"
             },
@@ -1213,13 +1316,14 @@
               "type": "bool"
             }
           ],
-          "internalType": "struct EHRmain.approvedRecord",
+          "internalType": "struct EHRStorage.approvedRecord",
           "name": "",
           "type": "tuple"
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1286,7 +1390,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1329,7 +1434,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1392,6 +1498,76 @@
       ],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_patientAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_hospitalName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_roomType",
+          "type": "string"
+        }
+      ],
+      "name": "bookAppointment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_patientAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getAppointmentsByPatient",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "patientAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "hospitalAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "hospitalName",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "roomType",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "bookingDate",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct EHRStorage.Appointment[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
