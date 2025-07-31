@@ -1,136 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract EHRmain {
-    // User roles
-    enum Role {
-        NONE,
-        PATIENT,
-        DOCTOR,
-        RESEARCHER,
-        HOSPITAL,
-        INSURANCE,
-        AMBULANCE,
-        PHARMACY,
-        LAB
-    }
+import "./EHRStorage.sol";
 
-    // Data types
-    enum DataType {
-        EHR,
-        PHR,
-        LAB_RESULT,
-        PRESCRIPTION,
-        IMAGING,
-        INSURANCE_CLAIM,
-        EMERGENCY_RECORD
-    }
-
-    // Permission types
-    enum PermissionType {
-        VIEW,
-        EDIT,
-        EMERGENCY_ACCESS,
-        INSURANCE_PROCESSING,
-        LAB_PROCESSING,
-        PRESCRIPTION_PROCESSING
-    }
-
-    // Status of permission requests
-    enum RequestStatus {
-        PENDING,
-        APPROVED,
-        REJECTED,
-        EXPIRED
-    }
-     enum RecordStatus { PENDING, COMPLETED, VALID, INVALID }
-
-    // Structs for storing user data
-    struct User {
-        address userAddress;
-        Role role;
-        uint256 registrationDate;
-        bytes32 publicKeyHash;
-    }
-
-    // Struct for health records metadata
-    struct HealthRecord {
-        address owner;
-        string ipfsCid;
-        DataType dataType;
-        string encryptedSymmetricKey;
-        uint256 timestamp;
-        RecordStatus status;
-        address provider;
-    }
-
-    struct approvedRecord {
-        address owner;
-        address careProvider;
-        string ipfsCid;
-        DataType dataType;
-        string encryptedSymmetricKey;
-        uint256 approvedDate;
-        uint256 expiryDate;
-        bool status;
-    }
-
-    // Struct for permission requests
-    struct PermissionRequest {
-        address requester;
-        address owner;
-        bytes32 requestId;
-        string ipfsCid;
-        PermissionType permissionType;
-        RequestStatus status;
-        uint256 requestDate;
-        uint256 expiryDate;
-        uint incentiveAmount;
-        bool isIncentiveBased;
-    }
-
-    // Struct to hold public and private keys
-    struct KeyPair {
-        string publicKeyForEncryption;
-    }
-
-    // State variables
-    mapping(address => User) public users;
-    mapping(string => HealthRecord) public healthRecords;
-    mapping(bytes32 => PermissionRequest) public permissionRequests;
-    mapping(address => mapping(string => mapping(address => bool))) public permissions;
-    mapping(address => approvedRecord[]) public approvedRecords;
-    mapping(string => approvedRecord) public approvedRecordsByID;
-    mapping(address => string[]) public ownerToHealthRecords;
-    mapping(address => KeyPair) public userKeys;
-    mapping(address => mapping(address => bool)) public emergencyAccesses;
-
-    // System variables
-    address public systemOwner;
-    uint256 public totalUsers;
-    uint256 public totalRecords;
-    uint256 public totalRequests;
-    bytes32[] public permissionRequestIds;
-
-    // Events
-    event UserRegistered(address indexed userAddress, Role role);
-    event HealthRecordAdded(string indexed ipfsCid, address indexed owner, DataType dataType);
-    event PermissionRequested(bytes32 requestId, address indexed requester, address indexed owner);
-    event PermissionGranted(bytes32 requestId, address indexed requester, address indexed owner);
-    event PermissionRevoked(string indexed ipfsCid, address indexed revokedUser);
-    event RecordStatusUpdated(string indexed ipfsCid, RecordStatus newStatus);
-    event EmergencyAccess(address indexed provider, address indexed patient, uint256 timestamp);
-    event ApprovedRecordAdded(
-        address indexed owner,
-        address indexed careProvider,
-        string ipfsCid,
-        DataType dataType,
-        string encryptedSymmetricKey,
-        uint256 approvedDate,
-        uint256 expiryDate,
-        bool status
-    );
-
+contract EHRmain is EHRStorage {
     // Modifiers
     modifier onlySystemOwner() {
         require(msg.sender == systemOwner, "Only system owner can call this function");
@@ -153,9 +26,9 @@ contract EHRmain {
     }
 
     modifier recordExists(string memory _ipfsCid) {
-            require(healthRecords[_ipfsCid].owner != address(0), "Record does not exist");
-            _;
-        }
+        require(healthRecords[_ipfsCid].owner != address(0), "Record does not exist");
+        _;
+    }
 
     modifier onlyAmbulance() {
         require(users[msg.sender].role == Role.AMBULANCE, "Only ambulance services can call this function");
@@ -216,7 +89,7 @@ contract EHRmain {
         return users[_userAddress].role;
     }
 
-function addEHRData(
+    function addEHRData(
         address _patientAddress,
         string memory _ipfsCid,
         DataType _dataType,
@@ -248,7 +121,7 @@ function addEHRData(
         return true;
     }
 
-function addPHRData(
+    function addPHRData(
         string memory _ipfsCid,
         DataType _dataType,
         string calldata _encryptedSymmetricKey
@@ -470,7 +343,7 @@ function addPHRData(
         return records;
     }
 
-function getHealthRecordByIpfs(string memory recordId)
+    function getHealthRecordByIpfs(string memory recordId)
         public
         view
         returns (
@@ -495,7 +368,7 @@ function getHealthRecordByIpfs(string memory recordId)
         );
     }
 
-function getRecordsByCareProvider(address _careProvider)
+    function getRecordsByCareProvider(address _careProvider)
         public
         view
         returns (approvedRecord[] memory)
@@ -547,12 +420,12 @@ function getRecordsByCareProvider(address _careProvider)
     }
 
     function invalidateRecord(string memory _ipfsCid)
-            external
-            recordExists(_ipfsCid)
-            onlySystemOwner
-        {
-            healthRecords[_ipfsCid].status = RecordStatus.INVALID; // <-- to this
-        }
+        external
+        recordExists(_ipfsCid)
+        onlySystemOwner
+    {
+        healthRecords[_ipfsCid].status = RecordStatus.INVALID; // <-- to this
+    }
 
     function getPermissionRequest(bytes32 requestId)
         public
@@ -698,4 +571,3 @@ function getRecordsByCareProvider(address _careProvider)
         emit RecordStatusUpdated(_ipfsCid, RecordStatus.COMPLETED);
     }
 }
-
