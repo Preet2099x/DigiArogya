@@ -6,8 +6,6 @@ import contractABI from '../../contractABI.json';
 import { encryptSymmetricKey } from '../../services/cryptography/asymmetricEncryption';
 import encryptFileToBase64 from '../../services/cryptography/fileEncrypter';
 import { uploadToIPFS } from '../../services/ipfs/ipfsUploader';
-import { addElectronicHealthRecord } from '../../services/transactions/electronicHealthRecordAdd';
-import { addPatientRecord } from '../../services/transactions/patientRecordAdd';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -43,7 +41,7 @@ const handleFileUpload = async () => {
         setError(''); // Clear previous errors
 
         try {
-            // Step 1: Encrypt the file
+            // Step 1: Encrypt the file and symmetric key
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
@@ -52,10 +50,18 @@ const handleFileUpload = async () => {
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
             const encryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
 
-            // Step 2: Create a blob FROM the actual encrypted content
-            const fileBlob = new Blob([base64Content], { type: 'text/plain' });
+            // Step 2: Create the JSON payload with encrypted data and file metadata.
+            const ipfsPayload = {
+                encryptedContent: base64Content,
+                fileName: selectedFile.name,
+                fileType: selectedFile.type
+            };
+            
+            // Step 3: Convert the payload to a JSON string and create a Blob for uploading.
+            const dataToUpload = JSON.stringify(ipfsPayload);
+            const fileBlob = new Blob([dataToUpload], { type: 'application/json' });
 
-            // Step 3: Upload the encrypted blob to IPFS using your function
+            // Step 4: Upload the JSON blob to IPFS.
             const uploadResult = await uploadToIPFS({ file: fileBlob, userPublicKey: await signer.getAddress() });
             
             if (!uploadResult || !uploadResult.ipfsHash) {
@@ -65,7 +71,7 @@ const handleFileUpload = async () => {
             const ipfsCid = uploadResult.ipfsHash;
             console.log("Uploaded to IPFS with CID:", ipfsCid);
 
-            // Step 4: Add the record's metadata to the blockchain
+            // Step 5: Add the record's metadata to the blockchain
             const dataTypeAsNumber = Number(dataType);
             let tx;
             if (userRole === 'Patient') {

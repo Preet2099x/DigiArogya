@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Box, Tab, Tabs, Typography, Button, Paper } from '@mui/material';
+import { Box, Tab, Tabs, Typography, Button, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, CircularProgress } from '@mui/material';
 import { LocalHospital, Hotel, MedicalServices } from '@mui/icons-material';
+import { BrowserProvider, ethers } from 'ethers';
+import contractABI from '../../contractABI.json';
+
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -22,6 +26,10 @@ function TabPanel(props) {
 const HospitalDashboard = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState(null);
+  const [patientInfo, setPatientInfo] = useState({ name: '', age: '', address: '' });
+  const [isBooking, setIsBooking] = useState(false);
   const [floors, setFloors] = useState([
     {
       id: 1,
@@ -38,7 +46,7 @@ const HospitalDashboard = () => {
       rooms: {
         general: { total: 25, available: 18 },
         private: { total: 15, available: 10 },
-        icu: { total: 8, available: 5 }
+        icu: { total: 8, available: 0 }
       }
     },
     {
@@ -62,6 +70,53 @@ const HospitalDashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+  
+  const handleOpenDialog = (floor, roomType) => {
+    setBookingDetails({ floorId: floor.id, floorName: floor.name, roomType: roomType });
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setPatientInfo({ name: '', age: '', address: '' }); // Reset form
+    setBookingDetails(null);
+  };
+
+  const handlePatientInfoChange = (e) => {
+    setPatientInfo({
+      ...patientInfo,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!patientInfo.address || !ethers.isAddress(patientInfo.address)) {
+        toast.error("Please enter a valid patient wallet address.");
+        return;
+    }
+    setIsBooking(true);
+    try {
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+        
+        const hospitalName = "Central City Hospital"; 
+        
+        const tx = await contract.bookAppointment(patientInfo.address, hospitalName, bookingDetails.roomType);
+        toast.info("Processing booking transaction...");
+        await tx.wait();
+
+        updateBedCount(bookingDetails.floorId, bookingDetails.roomType, -1);
+        
+        toast.success(`Bed booked for ${patientInfo.name} in a ${bookingDetails.roomType} room.`);
+        handleCloseDialog();
+    } catch (error) {
+        console.error("Error booking appointment:", error);
+        toast.error(error?.reason || "Failed to book appointment.");
+    } finally {
+        setIsBooking(false);
+    }
   };
 
   const toggleDoctorAvailability = (doctorId) => {
@@ -88,10 +143,8 @@ const HospitalDashboard = () => {
                 available: newAvailable
               }
             };
-            toast.success(`${floor.name} ${roomType} beds updated to ${newAvailable}`);
             return { ...floor, rooms: updatedRooms };
           }
-          toast.error(newAvailable < 0 ? 'No beds available to remove' : 'Cannot exceed total beds');
           return floor;
         }
         return floor;
@@ -177,22 +230,15 @@ const HospitalDashboard = () => {
                         <Typography variant="h4" sx={{ color: '#00796b' }}>{data.available}</Typography>
                         <Typography variant="body2" sx={{ color: '#7f8c8d' }}>of {data.total}</Typography>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex justify-center">
                         <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => updateBedCount(floor.id, type, -1)}
-                        >
-                          -1
-                        </Button>
-                        <Button
-                          variant="outlined"
+                          variant="contained"
                           color="success"
                           size="small"
-                          onClick={() => updateBedCount(floor.id, type, 1)}
+                          disabled={data.available === 0}
+                          onClick={() => handleOpenDialog(floor, type)}
                         >
-                          +1
+                          {data.available > 0 ? 'Book Bed' : 'Unavailable'}
                         </Button>
                       </div>
                     </div>
@@ -224,6 +270,55 @@ const HospitalDashboard = () => {
           </div>
         </TabPanel>
       </Box>
+
+      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+        <DialogTitle>Book a Bed</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Please enter the patient's details to book a {bookingDetails?.roomType} bed on the {bookingDetails?.floorName}.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            name="name"
+            label="Patient Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={patientInfo.name}
+            onChange={handlePatientInfoChange}
+          />
+          <TextField
+            margin="dense"
+            id="age"
+            name="age"
+            label="Patient Age"
+            type="number"
+            fullWidth
+            variant="standard"
+            value={patientInfo.age}
+            onChange={handlePatientInfoChange}
+          />
+          <TextField
+            margin="dense"
+            id="address"
+            name="address"
+            label="Patient Wallet Address"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={patientInfo.address}
+            onChange={handlePatientInfoChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} disabled={isBooking}>Cancel</Button>
+          <Button onClick={handleConfirmBooking} variant="contained" color="success" disabled={isBooking}>
+            {isBooking ? <CircularProgress size={24} color="inherit" /> : 'Confirm Booking'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
