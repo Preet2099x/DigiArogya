@@ -586,4 +586,72 @@ contract EHRmain is EHRStorage {
 
         emit RecordStatusUpdated(_ipfsCid, RecordStatus.COMPLETED);
     }
+
+    struct InsuranceClaim {
+        uint256 claimId;
+        address patient;
+        string plan;
+        uint256 amount;
+        string description;
+        string status; // "Pending", "Approved", "Rejected"
+        uint256 timestamp;
+        string ipfsHash; // For uploaded insurance paper
+    }
+
+    mapping(address => InsuranceClaim[]) public insuranceClaims;
+    InsuranceClaim[] public allInsuranceClaims;
+    uint256 public nextClaimId = 1;
+
+    // Patient submits insurance claim
+    function addInsuranceClaim(
+        address patient,
+        string memory plan,
+        uint256 amount,
+        string memory description,
+        string memory ipfsHash
+    ) public {
+        InsuranceClaim memory claim = InsuranceClaim({
+            claimId: nextClaimId,
+            patient: patient,
+            plan: plan,
+            amount: amount,
+            description: description,
+            status: "Pending",
+            timestamp: block.timestamp,
+            ipfsHash: ipfsHash
+        });
+        insuranceClaims[patient].push(claim);
+        allInsuranceClaims.push(claim);
+        nextClaimId++;
+    }
+
+    // Get claims for a patient
+    function getInsuranceClaims(address patient) public view returns (InsuranceClaim[] memory) {
+        return insuranceClaims[patient];
+    }
+
+    // Get all claims (for insurance dashboard)
+    function getAllInsuranceClaims() public view returns (InsuranceClaim[] memory) {
+        return allInsuranceClaims;
+    }
+
+    // Approve/reject claim (by insurance provider)
+    function processInsuranceClaim(uint256 claimId, bool approve) public {
+        for (uint256 i = 0; i < allInsuranceClaims.length; i++) {
+            if (allInsuranceClaims[i].claimId == claimId) {
+                if (approve) {
+                    allInsuranceClaims[i].status = "Approved";
+                } else {
+                    allInsuranceClaims[i].status = "Rejected";
+                }
+                address patient = allInsuranceClaims[i].patient;
+                for (uint256 j = 0; j < insuranceClaims[patient].length; j++) {
+                    if (insuranceClaims[patient][j].claimId == claimId) {
+                        insuranceClaims[patient][j].status = allInsuranceClaims[i].status;
+                    }
+                }
+                break;
+            }
+        }
+    }
 }
