@@ -523,6 +523,15 @@ const PatientDashboard = () => {
                         <TableCell>
                           <Chip label={claim.status} color={claim.status === "Pending" ? "warning" : claim.status === "Approved" ? "success" : "error"} size="small" />
                         </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No insurance claims found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
