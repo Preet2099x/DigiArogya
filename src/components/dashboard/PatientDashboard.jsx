@@ -36,15 +36,6 @@ const dataTypeMap = { 0: "EHR", 1: "PHR", 2: "Lab Results", 3: "Prescription", 4
 const recordStatusMap = { 0: "Pending", 1: "Completed", 2: "Valid", 3: "Invalid" };
 const statusMap = { 0: "Pending", 1: "Approved", 2: "Rejected", 3: "Completed" };
 
-// Mock data for the "Find a Doctor" feature
-const specialties = [
-  { name: 'Cardiology', doctors: [{ id: 1, name: 'Dr. Sarah Johnson' }, { id: 2, name: 'Dr. Robert Taylor' }] },
-  { name: 'Neurology', doctors: [{ id: 3, name: 'Dr. Michael Chen' }] },
-  { name: 'Pediatrics', doctors: [{ id: 4, name: 'Dr. Emily Williams' }] },
-  { name: 'Orthopedics', doctors: [{ id: 5, name: 'Dr. James Wilson' }] },
-  { name: 'Dermatology', doctors: [{ id: 6, name: 'Dr. Maria Garcia' }] },
-];
-
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
   const [healthRecords, setHealthRecords] = useState([]);
@@ -142,17 +133,13 @@ const PatientDashboard = () => {
     else if (tabValue === 2) fetchBookings();
   }, [tabValue]);
 
-  const handleBookDoctor = (doctor) => {
-    toast.success(`Appointment request sent for Dr. ${doctor.name}.`);
-  };
-
   const handleRequestAction = async (requestId, action) => {
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      if (action === "approve") await contract.approvePermissionRequest(requestId);
-      else if (action === "decline") await contract.declinePermissionRequest(requestId);
+      if (action === "approve") await contract.approvePermission(requestId); // Corrected function name
+      else if (action === "decline") await contract.declinePermissionRequest(requestId); // Assuming this exists
       fetchPermissionRequests();
     } catch (error) {
       console.error(`Error ${action}ing request:`, error);
@@ -196,7 +183,6 @@ const PatientDashboard = () => {
           <Tab label="Health Records" sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
           <Tab label="Permission Requests" sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
           <Tab label="Bookings & Appointments"  sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
-          <Tab label="Find a Doctor"  sx={{ fontWeight: "bold", color: "#00796b", "&.Mui-selected": { color: "#004d40" } }} />
         </Tabs>
 
         {tabValue === 0 && (
@@ -264,25 +250,6 @@ const PatientDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-          </Box>
-        )}
-
-        {tabValue === 3 && (
-          <Box>
-            <Typography variant="h5" fontWeight="bold" color="text.primary" mb={2}>Find a Doctor by Specialty</Typography>
-            {specialties.map((specialty, index) => (
-              <Accordion key={index} sx={{ mb: 1 }}>
-                <AccordionSummary expandIcon={<ExpandMore />}><Typography fontWeight="medium">{specialty.name}</Typography></AccordionSummary>
-                <AccordionDetails>
-                  {specialty.doctors.map((doctor) => (
-                    <Paper key={doctor.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }} variant="outlined">
-                      <Typography>{doctor.name}</Typography>
-                      <Button variant="contained" size="small" onClick={() => handleBookDoctor(doctor)} sx={{ backgroundColor: "#00796b" }}>Book Doctor</Button>
-                    </Paper>
-                  ))}
-                </AccordionDetails>
-              </Accordion>
-            ))}
           </Box>
         )}
 
