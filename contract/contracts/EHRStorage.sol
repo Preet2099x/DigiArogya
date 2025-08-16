@@ -121,6 +121,7 @@ abstract contract EHRStorage {
     uint256 public totalRecords;
     uint256 public totalRequests;
     bytes32[] public permissionRequestIds;
+    uint256 public nextClaimId = 1; // Counter for insurance claim IDs
 
     // Events
     event UserRegistered(address indexed userAddress, Role role);
@@ -147,4 +148,17 @@ abstract contract EHRStorage {
         string roomType,
         uint256 bookingDate
     ); // New event for bookings
+    
+    // Insurance events
+    event InsuranceClaimSubmitted(
+        uint256 indexed claimId,
+        address indexed patient,
+        uint256 amount,
+        string plan
+    );
+    event InsuranceClaimProcessed(
+        uint256 indexed claimId,
+        address indexed patient,
+        string status
+    );
 }

@@ -5,9 +5,9 @@ import {
   Alert, Snackbar, Tabs, Tab,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from "@mui/material";
-import { format } from "date-fns";
 import { BrowserProvider, ethers } from "ethers";
 import contractABI from "../../contractABI.json";
+import contractService from "../../services/contractService";
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -24,60 +24,42 @@ const InsuranceDashboard = () => {
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [rejectionDialog, setRejectionDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [account, setAccount] = useState("");
-  const [totalUsers, setTotalUsers] = useState(0);
 
   // Load insurance claims from blockchain
   const loadInsuranceClaims = useCallback(async () => {
     try {
       setLoading(true);
-      if (typeof window.ethereum === 'undefined') {
-        setAlertMessage('Please install MetaMask to continue.');
-        setAlertSeverity('error');
-        setOpenAlert(true);
-        return;
-      }
+      
+      console.log('Loading all insurance claims...');
 
-      // always request accounts
-      const provider = new BrowserProvider(window.ethereum);
-      await provider.send('eth_requestAccounts', []);
-      const signer = await provider.getSigner();
-      const insurerAddress = await signer.getAddress();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      // Use contract service to get all claims with automatic fallback
+      const claims = await contractService.getAllInsuranceClaims();
+      
+      console.log('Fetched all claims:', claims);
 
-      console.log('Loading claims for insurer:', insurerAddress);
-
-      // Get all claims for this insurer
-      // const claims = await contract.getInsurerClaims(insurerAddress);
-      // const claims = await contract.getClaimsByInsurer(insurerAddress); // <-- update to correct ABI function
-      const claims = await contract.getHealthRecordsByOwner(insurerAddress); // <-- use actual ABI function
-
-      const processedClaims = claims.map((claim, idx) => ({
-        claimId: idx + 1, // No claimId in ABI, use index
-        patient: claim.owner,
-        patientName: `Patient ${claim.owner?.substring(2, 8)}`,
-        ipfsHash: claim.ipfsCid,
-        claimAmount: "-", // Not available in ABI, set as '-'
-        diagnosis: claim.dataType, // You may want to map this to a readable string
-        hospitalName: claim.provider, // Not available, use provider address
-        timestamp: Number(claim.timestamp),
-        status: claim.status === 0 ? 'PENDING' : claim.status === 1 ? 'APPROVED' : claim.status === 2 ? 'REJECTED' : 'UNKNOWN',
-        rejectionReason: "", // Not available in ABI
-        insuranceProvider: "" // Not available in ABI
+      // Add additional display properties
+      const processedClaims = claims.map((claim) => ({
+        ...claim,
+        patientName: `Patient ${(claim.patient?.substring(2, 8) || 'Unknown')?.toUpperCase()}`,
+        hospitalName: "General Hospital", // Mock data - can be enhanced later
+        diagnosis: (claim.description || 'No description').substring(0, 50) + "..." // Extract diagnosis from description
       }));
 
-      console.log('Processed claims:', processedClaims);
-
       setAllClaims(processedClaims);
-      setPendingClaims(processedClaims.filter(claim => claim.status === 'PENDING'));
-      setApprovedClaims(processedClaims.filter(claim => claim.status === 'APPROVED'));
-      setRejectedClaims(processedClaims.filter(claim => claim.status === 'REJECTED'));
+      setPendingClaims(processedClaims.filter(claim => claim.status === 'Pending'));
+      setApprovedClaims(processedClaims.filter(claim => claim.status === 'Approved'));
+      setRejectedClaims(processedClaims.filter(claim => claim.status === 'Rejected'));
 
     } catch (error) {
       console.error('Error loading claims:', error);
       setAlertMessage(`Error loading insurance claims: ${error.message}`);
       setAlertSeverity('error');
       setOpenAlert(true);
+      // Set empty arrays as fallback
+      setAllClaims([]);
+      setPendingClaims([]);
+      setApprovedClaims([]);
+      setRejectedClaims([]);
     } finally {
       setLoading(false);
     }
@@ -85,22 +67,16 @@ const InsuranceDashboard = () => {
 
   // Approve a claim
   const handleApproveClaim = async (claim) => {
-    if (!selectedClaim || !rejectionReason.trim()) {
-      setAlertMessage('Please provide a rejection reason');
-      setAlertSeverity('warning');
-      setOpenAlert(true);
-      return;
-    }
-
     try {
       setLoading(true);
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
 
-      console.log('Approving claim:', claim.claimId, 'for patient:', claim.patient);
+      console.log('Approving claim:', claim.claimId);
 
-      const tx = await contract.approveClaim(claim.patient, claim.claimId);
+      // Call processInsuranceClaim with approve = true
+      const tx = await contract.processInsuranceClaim(claim.claimId, true);
       
       setAlertMessage('Approving claim... Please wait for confirmation.');
       setAlertSeverity('info');
@@ -140,7 +116,8 @@ const InsuranceDashboard = () => {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
 
-      const tx = await contract.rejectClaim(selectedClaim.patient, selectedClaim.claimId, rejectionReason);
+      // Call processInsuranceClaim with approve = false
+      const tx = await contract.processInsuranceClaim(selectedClaim.claimId, false);
       
       setAlertMessage('Rejecting claim... Please wait for confirmation.');
       setAlertSeverity('info');
@@ -170,52 +147,20 @@ const InsuranceDashboard = () => {
     }
   };
 
-  // Fetch all insurance claims from contract
-  const fetchClaims = async () => {
-    try {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      const allClaims = await contract.getAllInsuranceClaims();
-      // Map claims to readable format
-      setAllClaims(allClaims.map(claim => ({
-        claimId: claim.claimId,
-        patient: claim.patient,
-        plan: claim.plan,
-        amount: claim.amount,
-        description: claim.description,
-        status: claim.status,
-        timestamp: Number(claim.timestamp),
-      })).reverse());
-    } catch (err) {
-      console.error('Error fetching claims:', err);
-    }
-  };
-
   useEffect(() => {
     loadInsuranceClaims();
-    fetchClaims();
     
-    // auto-refresh
+    // auto-refresh every 30 seconds
     const autoRefresh = setInterval(() => {
       if (document.visibilityState === 'visible') {
         loadInsuranceClaims();
-        fetchClaims();
       }
     }, 30000);
 
     return () => {
       clearInterval(autoRefresh);
     };
-  }, [loadInsuranceClaims, fetchClaims]);  // drop isConnected dependency
-
-  useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.request({ method: "eth_requestAccounts" }).then(accounts => {
-        setAccount(accounts[0]);
-      });
-    }
-  }, []);
+  }, [loadInsuranceClaims]);
 
   const formatDate = (timestamp) => {
     return new Date(timestamp * 1000).toLocaleDateString();
@@ -239,7 +184,7 @@ const InsuranceDashboard = () => {
             <TableCell>Patient</TableCell>
             <TableCell>Hospital</TableCell>
             <TableCell>Diagnosis</TableCell>
-            <TableCell>Amount (ETH)</TableCell>
+            <TableCell>Amount (INR)</TableCell>
             <TableCell>Date</TableCell>
             <TableCell>Status</TableCell>
             {showActions && <TableCell>Actions</TableCell>}
@@ -261,7 +206,7 @@ const InsuranceDashboard = () => {
               </TableCell>
               <TableCell>{claim.hospitalName}</TableCell>
               <TableCell>{claim.diagnosis}</TableCell>
-              <TableCell>{claim.claimAmount}</TableCell>
+              <TableCell>₹{claim.amount.toLocaleString()}</TableCell>
               <TableCell>{formatDate(claim.timestamp)}</TableCell>
               <TableCell>
                 <Chip 

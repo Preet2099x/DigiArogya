@@ -600,7 +600,6 @@ contract EHRmain is EHRStorage {
 
     mapping(address => InsuranceClaim[]) public insuranceClaims;
     InsuranceClaim[] public allInsuranceClaims;
-    uint256 public nextClaimId = 1;
 
     // Patient submits insurance claim
     function addInsuranceClaim(
@@ -610,6 +609,11 @@ contract EHRmain is EHRStorage {
         string memory description,
         string memory ipfsHash
     ) public {
+        require(bytes(plan).length > 0, "Insurance plan cannot be empty");
+        require(amount > 0, "Claim amount must be greater than 0");
+        require(bytes(description).length > 0, "Description cannot be empty");
+        require(patient != address(0), "Invalid patient address");
+        
         InsuranceClaim memory claim = InsuranceClaim({
             claimId: nextClaimId,
             patient: patient,
@@ -622,6 +626,8 @@ contract EHRmain is EHRStorage {
         });
         insuranceClaims[patient].push(claim);
         allInsuranceClaims.push(claim);
+        
+        emit InsuranceClaimSubmitted(nextClaimId, patient, amount, plan);
         nextClaimId++;
     }
 
@@ -637,21 +643,31 @@ contract EHRmain is EHRStorage {
 
     // Approve/reject claim (by insurance provider)
     function processInsuranceClaim(uint256 claimId, bool approve) public {
+        require(users[msg.sender].role == Role.INSURANCE, "Only insurance providers can process claims");
+        
         for (uint256 i = 0; i < allInsuranceClaims.length; i++) {
             if (allInsuranceClaims[i].claimId == claimId) {
+                string memory newStatus;
                 if (approve) {
                     allInsuranceClaims[i].status = "Approved";
+                    newStatus = "Approved";
                 } else {
                     allInsuranceClaims[i].status = "Rejected";
+                    newStatus = "Rejected";
                 }
+                
                 address patient = allInsuranceClaims[i].patient;
                 for (uint256 j = 0; j < insuranceClaims[patient].length; j++) {
                     if (insuranceClaims[patient][j].claimId == claimId) {
-                        insuranceClaims[patient][j].status = allInsuranceClaims[i].status;
+                        insuranceClaims[patient][j].status = newStatus;
+                        break;
                     }
                 }
-                break;
+                
+                emit InsuranceClaimProcessed(claimId, patient, newStatus);
+                return;
             }
         }
+        revert("Claim not found");
     }
 }

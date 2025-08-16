@@ -15,6 +15,7 @@ import LabDashboard from './components/dashboard/LabDashboard';
 import AmbulanceDashboard from './components/dashboard/AmbulanceDashboard';
 import HospitalDashboard from './components/dashboard/HospitalDashboard';
 import LandingPage from './pages/landingPage/LandingPage';
+import InsuranceContractTester from './components/debug/InsuranceContractTester';
 
 
 const App = () => {
@@ -39,6 +40,9 @@ const App = () => {
         <Route path="/dashboard/pharmacy" element={<PharmacyDashboard />} />
         <Route path="/dashboard/lab" element={<LabDashboard />} />
         <Route path="/dashboard/ambulance" element={<AmbulanceDashboard />} />
+
+        {/* Debug/Testing Routes */}
+        <Route path="/test/insurance" element={<InsuranceContractTester />} />
       </Routes>
 
       {/* Toast Container for notifications */}
