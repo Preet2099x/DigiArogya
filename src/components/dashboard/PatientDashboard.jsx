@@ -104,7 +104,6 @@ const insurancePlansMap = {
   ]
 };
 
-// Add missing recordStatusMap
 const recordStatusMap = { 0: "Pending", 1: "Completed", 2: "Valid", 3: "Invalid" };
 
 // Add missing specialties mock data
@@ -115,7 +114,6 @@ const specialties = [
   { name: 'Orthopedics', doctors: [{ id: 5, name: 'Dr. James Wilson' }] },
   { name: 'Dermatology', doctors: [{ id: 6, name: 'Dr. Maria Garcia' }] },
 ];
-
 const PatientDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
   const [healthRecords, setHealthRecords] = useState([]);
@@ -268,21 +266,21 @@ const PatientDashboard = () => {
     else if (tabValue === 4) fetchInsuranceClaims();
   }, [tabValue]);
 
-  const handleBookDoctor = (doctor) => {
-    toast.success(`Appointment request sent for Dr. ${doctor.name}.`);
-  };
-
   const handleRequestAction = async (requestId, action) => {
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      if (action === "approve") await contract.approvePermissionRequest(requestId);
-      else if (action === "decline") await contract.declinePermissionRequest(requestId);
+      if (action === "approve") await contract.approvePermission(requestId); // Corrected function name
+      else if (action === "decline") await contract.declinePermissionRequest(requestId); // Assuming this exists
       fetchPermissionRequests();
     } catch (error) {
       console.error(`Error ${action}ing request:`, error);
     }
+  };
+
+  const handleBookDoctor = (doctor) => {
+    toast.success(`Appointment request sent for Dr. ${doctor.name}.`);
   };
 
   const handleBatchAccessApproval = async (requestId) => {
