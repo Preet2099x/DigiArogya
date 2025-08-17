@@ -22,6 +22,8 @@ export const getContractForFunction = (functionName) => {
     case 'addInsuranceClaim':
     case 'processInsuranceClaim':
     case 'addSampleData':
+    case 'checkUser':
+    case 'registerUser':
       return INSURANCE_CONTRACT; // Use working insurance contract
     default:
       return MAIN_CONTRACT;

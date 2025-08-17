@@ -5,11 +5,7 @@ import {
   Alert, Snackbar, Tabs, Tab,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from "@mui/material";
-import { BrowserProvider, ethers } from "ethers";
-import contractABI from "../../contractABI.json";
 import contractService from "../../services/contractService";
-
-const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const InsuranceDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -24,25 +20,27 @@ const InsuranceDashboard = () => {
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [rejectionDialog, setRejectionDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [documentDialog, setDocumentDialog] = useState(false);
+  const [selectedClaimForDocs, setSelectedClaimForDocs] = useState(null);
+  const [patientPrivateKey, setPatientPrivateKey] = useState('');
 
   // Load insurance claims from blockchain
   const loadInsuranceClaims = useCallback(async () => {
     try {
       setLoading(true);
       
-      console.log('Loading all insurance claims...');
+      console.log('Loading insurance claims...');
 
-      // Use contract service to get all claims with automatic fallback
-      const claims = await contractService.getAllInsuranceClaims();
-      
-      console.log('Fetched all claims:', claims);
+  // Always show all claims for simplicity
+  const claims = await contractService.getAllInsuranceClaims();
+  console.log('Fetched all claims:', claims);
 
       // Add additional display properties
       const processedClaims = claims.map((claim) => ({
         ...claim,
         patientName: `Patient ${(claim.patient?.substring(2, 8) || 'Unknown')?.toUpperCase()}`,
-        hospitalName: "General Hospital", // Mock data - can be enhanced later
-        diagnosis: (claim.description || 'No description').substring(0, 50) + "..." // Extract diagnosis from description
+        hospitalName: claim.insuranceCompany || "General Hospital",
+        diagnosis: (claim.description || 'No description').substring(0, 50) + "..."
       }));
 
       setAllClaims(processedClaims);
@@ -63,26 +61,26 @@ const InsuranceDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);  // remove `isConnected` from deps
+  }, []);
 
   // Approve a claim
   const handleApproveClaim = async (claim) => {
     try {
       setLoading(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-
+      
       console.log('Approving claim:', claim.claimId);
 
-      // Call processInsuranceClaim with approve = true
-      const tx = await contract.processInsuranceClaim(claim.claimId, true);
+      // Use contract service for approval with fallback
+      const result = await contractService.processInsuranceClaim(claim.claimId, true);
       
       setAlertMessage('Approving claim... Please wait for confirmation.');
       setAlertSeverity('info');
       setOpenAlert(true);
 
-      await tx.wait();
+      // Wait for transaction confirmation if it's a transaction
+      if (result && result.wait) {
+        await result.wait();
+      }
 
       setAlertMessage(`✅ Claim #${claim.claimId} approved successfully!`);
       setAlertSeverity('success');
@@ -112,18 +110,20 @@ const InsuranceDashboard = () => {
 
     try {
       setLoading(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      
+      console.log('Rejecting claim:', selectedClaim.claimId, 'Reason:', rejectionReason);
 
-      // Call processInsuranceClaim with approve = false
-      const tx = await contract.processInsuranceClaim(selectedClaim.claimId, false);
+      // Use contract service for rejection with fallback
+      const result = await contractService.processInsuranceClaim(selectedClaim.claimId, false);
       
       setAlertMessage('Rejecting claim... Please wait for confirmation.');
       setAlertSeverity('info');
       setOpenAlert(true);
 
-      await tx.wait();
+      // Wait for transaction confirmation if it's a transaction
+      if (result && result.wait) {
+        await result.wait();
+      }
 
       setAlertMessage(`❌ Claim #${selectedClaim.claimId} rejected successfully!`);
       setAlertSeverity('success');
@@ -140,6 +140,51 @@ const InsuranceDashboard = () => {
     } catch (error) {
       console.error('Error rejecting claim:', error);
       setAlertMessage(`Error rejecting claim: ${error.message}`);
+      setAlertSeverity('error');
+      setOpenAlert(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle document viewing with decryption
+  const handleViewDocuments = (claim) => {
+    setSelectedClaimForDocs(claim);
+    setDocumentDialog(true);
+  };
+
+  const handleDecryptAndView = async () => {
+    if (!patientPrivateKey.trim()) {
+      setAlertMessage('Please enter the patient\'s private key to decrypt documents');
+      setAlertSeverity('warning');
+      setOpenAlert(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Import the file downloader for decryption
+      const { downloadDecryptedFile } = await import('../files/FileDownloader');
+      
+      await downloadDecryptedFile(
+        selectedClaimForDocs.ipfsHash,
+        patientPrivateKey,
+        `claim_${selectedClaimForDocs.claimId}_documents.pdf`
+      );
+
+      setAlertMessage('Document decrypted and downloaded successfully!');
+      setAlertSeverity('success');
+      setOpenAlert(true);
+      
+      // Close dialog and reset
+      setDocumentDialog(false);
+      setPatientPrivateKey('');
+      setSelectedClaimForDocs(null);
+
+    } catch (error) {
+      console.error('Error decrypting document:', error);
+      setAlertMessage(`Error decrypting document: ${error.message}`);
       setAlertSeverity('error');
       setOpenAlert(true);
     } finally {
@@ -230,6 +275,7 @@ const InsuranceDashboard = () => {
                         size="small"
                         onClick={() => handleApproveClaim(claim)}
                         disabled={loading}
+                        title={loading ? "Please wait..." : ""}
                       >
                         Approve
                       </Button>
@@ -242,6 +288,7 @@ const InsuranceDashboard = () => {
                           setRejectionDialog(true);
                         }}
                         disabled={loading}
+                        title={loading ? "Please wait..." : ""}
                       >
                         Reject
                       </Button>
@@ -249,7 +296,7 @@ const InsuranceDashboard = () => {
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => window.open(`https://ipfs.io/ipfs/${claim.ipfsHash}`, '_blank')}
+                      onClick={() => handleViewDocuments(claim)}
                     >
                       View Documents
                     </Button>
@@ -279,15 +326,20 @@ const InsuranceDashboard = () => {
         <Typography variant="h4" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
           Insurance Claims Dashboard
         </Typography>
-        <Button
-          variant="contained"
-          color="error"
-          onClick={() => {/* Add logout functionality */}}
-          sx={{ textTransform: 'uppercase' }}
-        >
-          LOGOUT
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Registration button removed */}
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {/* Add logout functionality */}}
+            sx={{ textTransform: 'uppercase' }}
+          >
+            LOGOUT
+          </Button>
+        </Box>
       </Box>
+
+  {/* Registration warning removed */}
 
       {/* Statistics Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 3, mb: 4 }}>
@@ -455,6 +507,50 @@ const InsuranceDashboard = () => {
             disabled={!rejectionReason.trim() || loading}
           >
             {loading ? 'Rejecting...' : 'Reject Claim'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Document Dialog */}
+      <Dialog open={documentDialog} onClose={() => setDocumentDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>View Claim Documents #{selectedClaimForDocs?.claimId}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              Patient: {selectedClaimForDocs?.patientName}<br/>
+              Hospital: {selectedClaimForDocs?.hospitalName}<br/>
+              Diagnosis: {selectedClaimForDocs?.diagnosis}<br/>
+              Amount: ₹{selectedClaimForDocs?.amount?.toLocaleString()}
+            </Typography>
+            <Typography variant="body2" color="warning.main" mb={2}>
+              ⚠️ Enter the patient's private key to decrypt and view medical documents
+            </Typography>
+            <TextField
+              fullWidth
+              label="Patient Private Key *"
+              type="password"
+              value={patientPrivateKey}
+              onChange={(e) => setPatientPrivateKey(e.target.value)}
+              placeholder="Enter patient's private key for document decryption..."
+              helperText="This key is required to decrypt the encrypted medical documents"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDocumentDialog(false);
+            setPatientPrivateKey('');
+            setSelectedClaimForDocs(null);
+          }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDecryptAndView} 
+            variant="contained" 
+            color="primary"
+            disabled={!patientPrivateKey.trim() || loading}
+          >
+            {loading ? 'Decrypting...' : 'Decrypt & Download'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -116,7 +116,10 @@ class ContractService {
       'getInsuranceClaims',
       'getAllInsuranceClaims', 
       'addInsuranceClaim',
-      'processInsuranceClaim'
+      'processInsuranceClaim',
+      'checkUser',
+      'registerUser',
+      'addSampleData'
     ];
     return insuranceFunctions.includes(functionName);
   }
@@ -183,6 +186,92 @@ class ContractService {
     } catch (error) {
       console.error('Failed to add sample data:', error);
       throw error;
+    }
+  }
+
+  async processInsuranceClaim(claimId, approve) {
+    try {
+      console.log(`Processing claim ${claimId}, approve: ${approve}`);
+      
+      const result = await this.callContractFunction('processInsuranceClaim', claimId, approve);
+      
+      // Wait for transaction confirmation if it's a transaction
+      if (result && result.wait) {
+        await result.wait();
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to process insurance claim:', error);
+      throw error;
+    }
+  }
+
+  async checkUser() {
+    try {
+      await this.initialize();
+      const userAddress = await this.signer.getAddress();
+      const result = await this.callContractFunction('checkUser', userAddress);
+      return result;
+    } catch (error) {
+      console.error('Failed to check user role:', error);
+      return 0; // Return NONE role as fallback
+    }
+  }
+
+  async registerUser(role, companyName = '') {
+    try {
+      let result;
+      
+      if (role === 2 && companyName) {
+        // Insurance provider with company name
+        result = await this.callContractFunction('registerUser', role, companyName);
+      } else {
+        // Patient or backward compatibility
+        result = await this.callContractFunction('registerUser', role);
+      }
+      
+      // Wait for transaction confirmation if it's a transaction
+      if (result && result.wait) {
+        await result.wait();
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to register user:', error);
+      throw error;
+    }
+  }
+
+  async getMyAssignedClaims() {
+    try {
+      const result = await this.callContractFunction('getMyAssignedClaims');
+      return this.processClaimsData(result);
+    } catch (error) {
+      console.error('Failed to get assigned claims:', error);
+      return [];
+    }
+  }
+
+  async getUserCompany(address = null) {
+    try {
+      await this.initialize();
+      const userAddress = address || await this.signer.getAddress();
+      const result = await this.callContractFunction('getUserCompany', userAddress);
+      return result || '';
+    } catch (error) {
+      console.error('Failed to get user company:', error);
+      return '';
+    }
+  }
+
+  async getRegisteredCompanies() {
+    try {
+      const result = await this.callContractFunction('getRegisteredCompanies');
+      return result || [];
+    } catch (error) {
+      console.error('Failed to get registered companies:', error);
+      return ['SBI', 'HDFC', 'LIC', 'ICICI Lombard'];
     }
   }
 
