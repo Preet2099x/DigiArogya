@@ -544,35 +544,46 @@ const PatientDashboard = () => {
                     <TableCell>Description</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Date</TableCell>
+                    <TableCell>Rejection Reason</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {insuranceClaims.length > 0 ? (
-                    insuranceClaims.map((claim, idx) => (
-                      <TableRow key={claim.claimId || idx}>
-                        <TableCell>{claim.claimId}</TableCell>
-                        <TableCell>{claim.plan}</TableCell>
-                        <TableCell>₹{Number(claim.amount).toLocaleString()}</TableCell>
-                        <TableCell>{claim.description}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={claim.status} 
-                            color={
-                              claim.status === "Pending" ? "warning" : 
-                              claim.status === "Approved" ? "success" : 
-                              "error"
-                            } 
-                            size="small" 
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {claim.timestamp ? format(new Date(claim.timestamp * 1000), "PPP") : "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    insuranceClaims.map((claim, idx) => {
+                      // Logical amount display: fallback to claim.amount if valid, else show "-"
+                      let displayAmount = "-";
+                      if (claim.amount && !isNaN(Number(claim.amount)) && Number(claim.amount) < 100000000) {
+                        displayAmount = `₹${Number(claim.amount).toLocaleString()}`;
+                      }
+                      return (
+                        <TableRow key={claim.claimId || idx}>
+                          <TableCell>{claim.claimId}</TableCell>
+                          <TableCell>{claim.plan}</TableCell>
+                          <TableCell>{displayAmount}</TableCell>
+                          <TableCell>{claim.description}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={claim.status} 
+                              color={
+                                claim.status === "Pending" ? "warning" : 
+                                claim.status === "Approved" ? "success" : 
+                                "error"
+                              } 
+                              size="small" 
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {claim.timestamp ? format(new Date(claim.timestamp * 1000), "PPP") : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {claim.status === "Rejected" && claim.rejectionReason ? claim.rejectionReason : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={7} align="center">
                         No insurance claims found
                       </TableCell>
                     </TableRow>

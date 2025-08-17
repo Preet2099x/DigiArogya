@@ -6,6 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from "@mui/material";
 import contractService from "../../services/contractService";
+import FileDownloader from '../files/FileDownloader';
 
 const InsuranceDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -22,7 +23,7 @@ const InsuranceDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [documentDialog, setDocumentDialog] = useState(false);
   const [selectedClaimForDocs, setSelectedClaimForDocs] = useState(null);
-  const [patientPrivateKey, setPatientPrivateKey] = useState('');
+  const [insurancePrivateKey, setInsurancePrivateKey] = useState('');
 
   // Load insurance claims from blockchain
   const loadInsuranceClaims = useCallback(async () => {
@@ -153,45 +154,6 @@ const InsuranceDashboard = () => {
     setDocumentDialog(true);
   };
 
-  const handleDecryptAndView = async () => {
-    if (!patientPrivateKey.trim()) {
-      setAlertMessage('Please enter the patient\'s private key to decrypt documents');
-      setAlertSeverity('warning');
-      setOpenAlert(true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Import the file downloader for decryption
-      const { downloadDecryptedFile } = await import('../files/FileDownloader');
-      
-      await downloadDecryptedFile(
-        selectedClaimForDocs.ipfsHash,
-        patientPrivateKey,
-        `claim_${selectedClaimForDocs.claimId}_documents.pdf`
-      );
-
-      setAlertMessage('Document decrypted and downloaded successfully!');
-      setAlertSeverity('success');
-      setOpenAlert(true);
-      
-      // Close dialog and reset
-      setDocumentDialog(false);
-      setPatientPrivateKey('');
-      setSelectedClaimForDocs(null);
-
-    } catch (error) {
-      console.error('Error decrypting document:', error);
-      setAlertMessage(`Error decrypting document: ${error.message}`);
-      setAlertSeverity('error');
-      setOpenAlert(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadInsuranceClaims();
     
@@ -296,9 +258,12 @@ const InsuranceDashboard = () => {
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => handleViewDocuments(claim)}
+                      onClick={() => {
+                        setDocumentDialog(true);
+                        setSelectedClaimForDocs(claim);
+                      }}
                     >
-                      View Documents
+                      View
                     </Button>
                   </Box>
                 </TableCell>
@@ -512,47 +477,19 @@ const InsuranceDashboard = () => {
       </Dialog>
 
       {/* Document Dialog */}
-      <Dialog open={documentDialog} onClose={() => setDocumentDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>View Claim Documents #{selectedClaimForDocs?.claimId}</DialogTitle>
+      <Dialog open={documentDialog} onClose={() => setDocumentDialog(false)}>
+        <DialogTitle sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+          <span role="img" aria-label="insurance">📄</span> View Claim Document #{selectedClaimForDocs?.claimId}
+        </DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              Patient: {selectedClaimForDocs?.patientName}<br/>
-              Hospital: {selectedClaimForDocs?.hospitalName}<br/>
-              Diagnosis: {selectedClaimForDocs?.diagnosis}<br/>
-              Amount: ₹{selectedClaimForDocs?.amount?.toLocaleString()}
-            </Typography>
-            <Typography variant="body2" color="warning.main" mb={2}>
-              ⚠️ Enter the patient's private key to decrypt and view medical documents
-            </Typography>
-            <TextField
-              fullWidth
-              label="Patient Private Key *"
-              type="password"
-              value={patientPrivateKey}
-              onChange={(e) => setPatientPrivateKey(e.target.value)}
-              placeholder="Enter patient's private key for document decryption..."
-              helperText="This key is required to decrypt the encrypted medical documents"
-            />
-          </Box>
+          <FileDownloader
+            onClose={() => setDocumentDialog(false)}
+            ipfsHash={selectedClaimForDocs?.ipfsHash}
+            encryptedSymmetricKey={selectedClaimForDocs?.encryptedSymmetricKey}
+            recordInfo={{ ipfsCid: selectedClaimForDocs?.ipfsHash, encryptedSymmetricKey: selectedClaimForDocs?.encryptedSymmetricKey }}
+            privateKeyLabel="Insurance Private Key"
+          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setDocumentDialog(false);
-            setPatientPrivateKey('');
-            setSelectedClaimForDocs(null);
-          }}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDecryptAndView} 
-            variant="contained" 
-            color="primary"
-            disabled={!patientPrivateKey.trim() || loading}
-          >
-            {loading ? 'Decrypting...' : 'Decrypt & Download'}
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Alert Snackbar */}

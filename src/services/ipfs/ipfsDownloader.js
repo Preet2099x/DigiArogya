@@ -11,18 +11,28 @@ export const downloadFromIPFS = async (ipfsHash) => {
         }
 
         const data = await pinata.gateways.get(ipfsHash);
-        console.log(data);
+        console.log('IPFS raw response:', data);
 
-        if (!data.data || !data.data.encryptedContent) {
-            throw new Error('Invalid response format. Missing encryptedContent.');
+        // Try to extract encryptedContent from different possible locations
+        let encryptedContent, fileName, fileType, dataType;
+        if (data.data && data.data.encryptedContent) {
+            encryptedContent = data.data.encryptedContent;
+            fileName = data.data.fileName;
+            fileType = data.data.fileType;
+            dataType = data.data.dataType;
+            return { encryptedContent, fileType, fileName, dataType };
+        } else if (data.encryptedContent) {
+            encryptedContent = data.encryptedContent;
+            fileName = data.fileName;
+            fileType = data.fileType;
+            dataType = data.dataType;
+            return { encryptedContent, fileType, fileName, dataType };
+        } else if (data.contentType && data.contentType.startsWith('image/')) {
+            // Raw image or file, just return the blob
+            return { rawContent: data.data, fileType: data.contentType, fileName: ipfsHash, dataType: 'raw' };
+        } else {
+            throw new Error('Invalid response format. Missing encryptedContent. Full response: ' + JSON.stringify(data));
         }
-
-        const fileName = data.data.fileName;
-        const fileType = data.data.fileType;
-        const dataType = data.data.dataType;
-        const encryptedContent = data.data.encryptedContent;
-
-        return { encryptedContent, fileType, fileName, dataType };
     } catch (error) {
         console.error('IPFS download error:', error);
         throw new Error(`Failed to fetch file from IPFS: ${error.message}`);

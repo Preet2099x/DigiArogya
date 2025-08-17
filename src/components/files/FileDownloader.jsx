@@ -7,11 +7,10 @@ import { Buffer } from "buffer";
 import { decryptWithPrivateKey } from "../../services/cryptography/asymmetricEncryption";
 import decryptBase64ToFile from "../../services/cryptography/fileDecrypter";
 import { downloadFromIPFS } from "../../services/ipfs/ipfsDownloader";
-import { ToastContainer, toast } from "react-toastify";
 
 window.Buffer = window.Buffer || Buffer;
 
-const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
+const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey, privateKeyLabel = "Enter your Private Key", debugInfo }) => {
   const [privateKeyForDecryption, setPrivateKeyForDecryption] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,12 +18,27 @@ const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
   // Get IPFS hash and encrypted key from either recordInfo or direct props
   const actualIpfsHash = recordInfo?.ipfsCid || ipfsHash;
   const actualEncryptedKey = recordInfo?.encryptedSymmetricKey || encryptedSymmetricKey;
+  // DEBUG: Log props and key info
+  if (debugInfo) {
+    console.log('[DEBUG] FileDownloader props:', {
+      recordInfo,
+      ipfsHash,
+      encryptedSymmetricKey,
+      debugInfo
+    });
+  }
 
   const handleDownload = async () => {
     if (!privateKeyForDecryption) {
       setError("Please enter your private key");
       return;
     }
+    // DEBUG: Log entered private key and encrypted key
+    console.log('[DEBUG] Download attempt:', {
+      privateKeyForDecryption,
+      actualEncryptedKey,
+      actualIpfsHash
+    });
 
     setLoading(true);
     setError("");
@@ -36,9 +50,6 @@ const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
       );
       const { encryptedContent, fileType, fileName } = await downloadFromIPFS(
         actualIpfsHash
-      );
-      toast.success(
-        `File downloaded successfully: ${fileName}.${fileType} file`
       );
 
       const decryptedBlob = decryptBase64ToFile(
@@ -76,12 +87,10 @@ const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
           sx={{ textAlign: "center" }}
         />
         <CardContent>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <TextField
               fullWidth
-              label="Enter your Private Key"
+              label={privateKeyLabel}
               type="password"
               value={privateKeyForDecryption}
               onChange={(e) => setPrivateKeyForDecryption(e.target.value)}
@@ -117,18 +126,6 @@ const FileDownloader = ({ recordInfo, ipfsHash, encryptedSymmetricKey }) => {
           </div>
         </CardContent>
       </Card>
-      <ToastContainer
-        position="top-right"
-        autoClose={1000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
     </div>
   );
 };
