@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import contractService from "../../services/contractService";
 import FileDownloader from '../files/FileDownloader';
+import InsuranceDebugPanel from '../debug/InsuranceDebugPanel';
 
 const InsuranceDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -71,6 +72,15 @@ const InsuranceDashboard = () => {
       
       console.log('Approving claim:', claim.claimId);
 
+      // First validate the claim can be processed
+      if (!claim || !claim.claimId) {
+        throw new Error('Invalid claim data');
+      }
+
+      if (claim.status !== 'Pending') {
+        throw new Error(`Claim is already ${claim.status}. Only pending claims can be processed.`);
+      }
+
       // Use contract service for approval with fallback
       const result = await contractService.processInsuranceClaim(claim.claimId, true);
       
@@ -92,7 +102,22 @@ const InsuranceDashboard = () => {
 
     } catch (error) {
       console.error('Error approving claim:', error);
-      setAlertMessage(`Error approving claim: ${error.message}`);
+      
+      let errorMessage = 'Error approving claim: ';
+      
+      if (error.message.includes('missing revert data')) {
+        errorMessage += 'Transaction failed. This usually means the claim ID doesn\'t exist or cannot be processed. Please refresh and try again.';
+      } else if (error.message.includes('Invalid claim ID')) {
+        errorMessage += 'Invalid claim ID. The claim may have been removed or doesn\'t exist.';
+      } else if (error.message.includes('Claim not found')) {
+        errorMessage += 'Claim not found in the blockchain. Please refresh and try again.';
+      } else if (error.message.includes('user rejected')) {
+        errorMessage += 'Transaction was cancelled by user.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      setAlertMessage(errorMessage);
       setAlertSeverity('error');
       setOpenAlert(true);
     } finally {
@@ -113,6 +138,11 @@ const InsuranceDashboard = () => {
       setLoading(true);
       
       console.log('Rejecting claim:', selectedClaim.claimId, 'Reason:', rejectionReason);
+
+      // First validate the claim can be processed
+      if (selectedClaim.status !== 'Pending') {
+        throw new Error(`Claim is already ${selectedClaim.status}. Only pending claims can be processed.`);
+      }
 
       // Use contract service for rejection with fallback
       const result = await contractService.processInsuranceClaim(selectedClaim.claimId, false);
@@ -140,7 +170,22 @@ const InsuranceDashboard = () => {
 
     } catch (error) {
       console.error('Error rejecting claim:', error);
-      setAlertMessage(`Error rejecting claim: ${error.message}`);
+      
+      let errorMessage = 'Error rejecting claim: ';
+      
+      if (error.message.includes('missing revert data')) {
+        errorMessage += 'Transaction failed. This usually means the claim ID doesn\'t exist or cannot be processed. Please refresh and try again.';
+      } else if (error.message.includes('Invalid claim ID')) {
+        errorMessage += 'Invalid claim ID. The claim may have been removed or doesn\'t exist.';
+      } else if (error.message.includes('Claim not found')) {
+        errorMessage += 'Claim not found in the blockchain. Please refresh and try again.';
+      } else if (error.message.includes('user rejected')) {
+        errorMessage += 'Transaction was cancelled by user.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      setAlertMessage(errorMessage);
       setAlertSeverity('error');
       setOpenAlert(true);
     } finally {
@@ -397,6 +442,7 @@ const InsuranceDashboard = () => {
           <Tab label="Pending Requests" />
           <Tab label="Approved Requests" />
           <Tab label="Rejected Requests" />
+          <Tab label="🔧 Debug Panel" />
         </Tabs>
       </Box>
 
@@ -436,6 +482,12 @@ const InsuranceDashboard = () => {
                 Rejected Claims ({rejectedClaims.length})
               </Typography>
               {renderClaimsTable(rejectedClaims)}
+            </Box>
+          )}
+          
+          {activeTab === 4 && (
+            <Box>
+              <InsuranceDebugPanel />
             </Box>
           )}
         </CardContent>

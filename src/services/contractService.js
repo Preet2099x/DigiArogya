@@ -191,19 +191,118 @@ class ContractService {
 
   async processInsuranceClaim(claimId, approve) {
     try {
-      console.log(`Processing claim ${claimId}, approve: ${approve}`);
+      console.log(`🔄 Processing claim ${claimId}, approve: ${approve}`);
       
-      const result = await this.callContractFunction('processInsuranceClaim', claimId, approve);
+      // First validate inputs
+      if (!claimId || claimId <= 0) {
+        throw new Error('Invalid claim ID provided');
+      }
+
+      // Convert claimId to number for comparison
+      const numericClaimId = parseInt(claimId);
+      console.log(`📊 Numeric claim ID: ${numericClaimId}`);
+
+      // SKIP VALIDATION FOR NOW - Let the blockchain handle it
+      console.log('⚠️ Skipping frontend validation - letting blockchain validate directly');
       
-      // Wait for transaction confirmation if it's a transaction
-      if (result && result.wait) {
-        await result.wait();
+      // Try the contract call directly with additional error handling
+      try {
+        console.log(`📞 Calling contract function with claimId=${numericClaimId}, approve=${approve}`);
+        
+        // Get the contract directly to bypass any fallback issues
+        await this.initialize();
+        const contractInfo = getContractForFunction('processInsuranceClaim');
+        const contract = this.getContract(contractInfo);
+        
+        // Log contract details
+        console.log(`📋 Contract address: ${contractInfo.address}`);
+        console.log(`📋 Contract name: ${contractInfo.name}`);
+        
+        // Try to call the function directly
+        const result = await contract.processInsuranceClaim(numericClaimId, approve);
+        
+        // Wait for transaction confirmation if it's a transaction
+        if (result && result.wait) {
+          console.log('⏳ Waiting for transaction confirmation...');
+          await result.wait();
+          console.log('✅ Transaction confirmed!');
+        }
+        
+        return result;
+      } catch (contractError) {
+        console.error('❌ Contract call failed:', contractError);
+        
+        // If contract call fails, try to get more information about why
+        if (contractError.message.includes('missing revert data')) {
+          console.log('🔍 Investigating contract state due to missing revert data...');
+          
+          try {
+            // Try to get contract state information
+            const contractInfo = getContractForFunction('getAllInsuranceClaims');
+            const contract = this.getContract(contractInfo);
+            
+            // Check if we can read basic contract info
+            const allClaims = await contract.getAllInsuranceClaims();
+            console.log(`📊 Contract readable - found ${allClaims.length} claims`);
+            
+            // Check if nextClaimId exists and is readable
+            try {
+              const nextClaimId = await contract.nextClaimId();
+              console.log(`📊 Contract nextClaimId: ${nextClaimId}`);
+              
+              if (numericClaimId >= nextClaimId) {
+                throw new Error(`Claim ID ${numericClaimId} is out of range. Next claim ID is ${nextClaimId}. Valid range: 1 to ${nextClaimId - 1}`);
+              }
+              
+              // Check if the specific claim exists
+              const targetClaim = allClaims.find(claim => {
+                const claimIdStr = claim.claimId?.toString();
+                return claimIdStr === numericClaimId.toString();
+              });
+              
+              if (!targetClaim) {
+                const availableIds = allClaims.map(c => c.claimId?.toString()).join(', ');
+                throw new Error(`Claim ID ${numericClaimId} does not exist. Available claim IDs: ${availableIds || 'none'}`);
+              }
+              
+              if (targetClaim.status !== 'Pending') {
+                throw new Error(`Claim ID ${numericClaimId} is already ${targetClaim.status}. Only Pending claims can be processed.`);
+              }
+              
+              // If we get here, the claim should be valid but blockchain is rejecting it
+              throw new Error(`Claim ID ${numericClaimId} appears valid but blockchain rejected the transaction. This might be a gas estimation issue or the claim status changed recently.`);
+              
+            } catch (nextIdError) {
+              console.error('❌ Could not read nextClaimId:', nextIdError);
+              throw new Error('Unable to validate claim ID range due to contract read error.');
+            }
+            
+          } catch (readError) {
+            console.error('❌ Could not read contract state:', readError);
+            throw new Error('Contract is not responding properly. Check if the contract is deployed and accessible.');
+          }
+        }
+        
+        throw contractError;
       }
       
-      return result;
     } catch (error) {
-      console.error('Failed to process insurance claim:', error);
-      throw error;
+      console.error('💥 Failed to process insurance claim:', error);
+      
+      // Provide more specific error messages based on what we learned
+      if (error.message.includes('out of range')) {
+        throw error; // Keep detailed range message
+      } else if (error.message.includes('does not exist')) {
+        throw error; // Keep detailed existence message
+      } else if (error.message.includes('already')) {
+        throw error; // Keep detailed status message
+      } else if (error.message.includes('missing revert data')) {
+        throw new Error('Blockchain transaction failed. The claim may not exist, may already be processed, or there may be a contract issue. Please refresh and try again.');
+      } else if (error.code === 'ACTION_REJECTED') {
+        throw new Error('Transaction was rejected by user.');
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -277,32 +376,50 @@ class ContractService {
 
   processClaimsData(rawClaims) {
     if (!rawClaims || rawClaims.length === 0) {
+      console.log('No claims data to process');
       return [];
     }
 
+    console.log(`Processing ${rawClaims.length} claims...`);
+
     return rawClaims.map((claim, index) => {
       try {
-        return {
-          claimId: Number(claim.claimId) || index,
+        // Handle BigInt claimId properly
+        let claimId;
+        if (claim.claimId !== undefined && claim.claimId !== null) {
+          claimId = parseInt(claim.claimId.toString());
+        } else {
+          claimId = index + 1; // Fallback
+        }
+
+        const processedClaim = {
+          claimId: claimId,
           patient: claim.patient || 'Unknown Patient',
           plan: claim.plan || 'Unknown Plan',
-          amount: Number(claim.amount) || 0,
+          amount: claim.amount ? claim.amount.toString() : '0', // Keep as string to avoid BigInt issues
           description: claim.description || 'No description',
           status: claim.status || 'Unknown',
-          timestamp: Number(claim.timestamp) || Date.now(),
-          ipfsHash: claim.ipfsHash || ''
+          timestamp: claim.timestamp ? parseInt(claim.timestamp.toString()) : Date.now(),
+          ipfsHash: claim.ipfsHash || '',
+          insuranceCompany: claim.insuranceCompany || 'Unknown Company',
+          assignedInsurer: claim.assignedInsurer || '0x0'
         };
+
+        console.log(`Processed claim ${index}: ID=${processedClaim.claimId}, Status=${processedClaim.status}`);
+        return processedClaim;
       } catch (processingError) {
         console.error('Error processing claim:', claim, processingError);
         return {
-          claimId: index,
+          claimId: index + 1,
           patient: 'Error',
           plan: 'Error Processing',
-          amount: 0,
+          amount: '0',
           description: 'Error processing this claim',
           status: 'Error',
           timestamp: Date.now(),
-          ipfsHash: ''
+          ipfsHash: '',
+          insuranceCompany: 'Unknown',
+          assignedInsurer: '0x0'
         };
       }
     });
