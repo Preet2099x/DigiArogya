@@ -48,6 +48,7 @@ const PatientDashboard = () => {
   const [openPrivateKeyDialog, setOpenPrivateKeyDialog] = useState(false);
   const [ownerPrivateKey, setOwnerPrivateKey] = useState("");
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [selectedPermissionType, setSelectedPermissionType] = useState("");
 
   const navigate = useNavigate();
 
@@ -138,13 +139,22 @@ const PatientDashboard = () => {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-      if (action === "approve") await contract.approvePermission(requestId); // Corrected function name
-      else if (action === "decline") await contract.declinePermissionRequest(requestId); // Assuming this exists
-      fetchPermissionRequests();
-    } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
+    if (action === "approve") {
+      // Use the new function only for Lab Results
+      if (permissionType === "Lab Results") {
+        await contract.approveLabResultPermission(requestId);
+      } else {
+        await contract.approvePermission(requestId);
+      }
+    } else if (action === "decline") {
+      await contract.declinePermissionRequest(requestId);
     }
-  };
+    fetchPermissionRequests();
+    fetchHealthRecords();
+  } catch (error) {
+    console.error(`Error ${action}ing request:`, error);
+  }
+};
 
   const handleBatchAccessApproval = async (requestId) => {
     try {
@@ -217,17 +227,83 @@ const PatientDashboard = () => {
           <TableContainer component={Card} sx={{ boxShadow: 3 }}>
             <Table>
               <TableHead>
-                <TableRow><TableCell>Requester</TableCell><TableCell>Request ID</TableCell><TableCell>IPFS CID</TableCell><TableCell>Status</TableCell><TableCell>Request Date</TableCell><TableCell>Expiry Date</TableCell><TableCell>Incentive Amount</TableCell><TableCell>Incentive-Based</TableCell><TableCell>Actions</TableCell></TableRow>
+                <TableRow>
+                  <TableCell>Requester</TableCell>
+                  <TableCell>Request ID</TableCell>
+                  <TableCell>IPFS CID</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Request Date</TableCell>
+                  <TableCell>Expiry Date</TableCell>
+                  <TableCell>Incentive Amount</TableCell>
+                  <TableCell>Incentive-Based</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
               </TableHead>
               <TableBody>
                 {permissionRequests.map((request) => (
                   <TableRow key={request.requestId}>
-                    <TableCell>{request.requester}</TableCell><TableCell>{request.requestId}</TableCell><TableCell>{request.ipfsCid || "N/A"}</TableCell>
-                    <TableCell><Chip label={request.status} color={request.status === "Pending" ? "warning" : "success"} size="small" /></TableCell>
-                    <TableCell>{request.requestDate ? format(new Date(request.requestDate * 1000), "MM/dd/yyyy") : "Invalid Date"}</TableCell>
-                    <TableCell>{request.expiryDate ? format(new Date(request.expiryDate * 1000), "MM/dd/yyyy") : "Invalid Date"}</TableCell>
-                    <TableCell>{request.incentiveAmount} ETH</TableCell><TableCell>{request.isIncentiveBased ? "Yes" : "No"}</TableCell>
-                    <TableCell>{request.status === "Pending" && (<>{request.ipfsCid === "" ? (<Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => handleBatchAccessApproval(request.requestId)}>Approve Batch Access</Button>) : (<Button variant="contained" size="small" sx={{ backgroundColor: "#00796b", mr: 1 }} onClick={() => { setSelectedRequestId(request.requestId); setOpenPrivateKeyDialog(true); }}>Approve</Button>)}<Button variant="outlined" size="small" color="error" onClick={() => handleRequestAction(request.requestId, "decline")}>Decline</Button></>)}</TableCell>
+                    <TableCell>{request.requester}</TableCell>
+                    <TableCell>{request.requestId}</TableCell>
+                    <TableCell>{request.ipfsCid || "N/A"}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={request.status}
+                        color={request.status === "Pending" ? "warning" : "success"}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {request.requestDate
+                        ? format(new Date(request.requestDate * 1000), "MM/dd/yyyy")
+                        : "Invalid Date"}
+                    </TableCell>
+                    <TableCell>
+                      {request.expiryDate
+                        ? format(new Date(request.expiryDate * 1000), "MM/dd/yyyy")
+                        : "Invalid Date"}
+                    </TableCell>
+                    <TableCell>{request.incentiveAmount} ETH</TableCell>
+                    <TableCell>{request.isIncentiveBased ? "Yes" : "No"}</TableCell>
+                    <TableCell>
+                      {request.status === "Pending" && (
+                        <>
+                          {request.ipfsCid === "" ? (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{ backgroundColor: "#00796b", mr: 1 }}
+                              onClick={() => handleBatchAccessApproval(request.requestId)}
+                            >
+                              Approve Batch Access
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{ backgroundColor: "#00796b", mr: 1 }}
+                              onClick={() => {
+                                setSelectedRequestId(request.requestId);
+                                setOpenPrivateKeyDialog(true);
+                                // Pass permissionType for dialog approval
+                                setSelectedPermissionType(request.permissionType);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                          )}
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            onClick={() =>
+                              handleRequestAction(request.requestId, "decline", request.permissionType)
+                            }
+                          >
+                            Decline
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -258,10 +334,48 @@ const PatientDashboard = () => {
         <Dialog open={openPrivateKeyDialog} onClose={() => setOpenPrivateKeyDialog(false)}>
           <Box p={3} width={400}>
             <Typography variant="h6" mb={2}>Enter Private Key</Typography>
-            <input type="password" placeholder="Private Key" value={ownerPrivateKey} onChange={(e) => setOwnerPrivateKey(e.target.value)} style={{ width: "100%", padding: "8px", marginBottom: "16px", borderRadius: "4px", border: "1px solid #ccc" }} />
+            <input
+              type="password"
+              placeholder="Private Key"
+              value={ownerPrivateKey}
+              onChange={(e) => setOwnerPrivateKey(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                marginBottom: "16px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
+            />
             <Box display="flex" justifyContent="flex-end" gap={2}>
-              <Button variant="outlined" onClick={() => setOpenPrivateKeyDialog(false)}>Cancel</Button>
-              <Button variant="contained" sx={{ backgroundColor: "#00796b" }} onClick={() => { approvePermission(selectedRequestId, ownerPrivateKey); setOpenPrivateKeyDialog(false); }}>Submit</Button>
+              <Button variant="outlined" onClick={() => setOpenPrivateKeyDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ backgroundColor: "#00796b" }}
+                onClick={async () => {
+                  try {
+                    const provider = new BrowserProvider(window.ethereum);
+                    const signer = await provider.getSigner();
+                    const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+                    if (selectedPermissionType === "Lab Results") {
+                      await contract.approveLabResultPermission(selectedRequestId);
+                    } else {
+                      await contract.approvePermission(selectedRequestId);
+                    }
+                    setOpenPrivateKeyDialog(false);
+                    fetchPermissionRequests();
+                    fetchHealthRecords();
+                    toast.success("Request approved!");
+                  } catch (error) {
+                    toast.error("Failed to approve request.");
+                    setOpenPrivateKeyDialog(false);
+                  }
+                }}
+              >
+                Submit
+              </Button>
             </Box>
           </Box>
         </Dialog>

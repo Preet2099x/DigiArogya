@@ -40,6 +40,16 @@ contract EHRmain is EHRStorage {
         _;
     }
 
+    // Temporary Lab Result Storage
+    struct TempLabResult {
+        address lab;
+        address patient;
+        string ipfsCid;
+        string testName;
+        string encryptedSymmetricKey;
+    }
+    mapping(bytes32 => TempLabResult) private tempLabResults;
+
     // Constructor
     constructor() {
         systemOwner = msg.sender;
@@ -149,6 +159,51 @@ contract EHRmain is EHRStorage {
         totalRecords++;
         emit HealthRecordAdded(_ipfsCid, msg.sender, _dataType);
         return true;
+    }
+
+    //  Lab Result Upload Function
+    function uploadLabResult(
+        address _patientAddress,
+        string memory _ipfsCid,
+        string memory _testName,
+        string memory _encryptedSymmetricKey
+    ) external onlyProvider returns (bytes32) {
+        require(users[msg.sender].role == Role.LAB, "Only labs can upload lab results");
+        require(users[_patientAddress].role == Role.PATIENT, "Invalid patient address");
+        require(bytes(_ipfsCid).length > 0, "IPFS CID required");
+        require(bytes(_testName).length > 0, "Test name required");
+        require(bytes(healthRecords[_ipfsCid].ipfsCid).length == 0, "Record already exists");
+
+        bytes32 requestId = keccak256(
+            abi.encodePacked(msg.sender, _patientAddress, _ipfsCid, block.timestamp)
+        );
+
+        permissionRequests[requestId] = PermissionRequest({
+            requester: msg.sender,
+            owner: _patientAddress,
+            requestId: requestId,
+            ipfsCid: _ipfsCid,
+            permissionType: PermissionType.VIEW,
+            status: RequestStatus.PENDING,
+            requestDate: block.timestamp,
+            expiryDate: block.timestamp + 30 days,
+            incentiveAmount: 0,
+            isIncentiveBased: false
+        });
+
+        totalRequests++;
+        permissionRequestIds.push(requestId);
+
+        tempLabResults[requestId] = TempLabResult({
+            lab: msg.sender,
+            patient: _patientAddress,
+            ipfsCid: _ipfsCid,
+            testName: _testName,
+            encryptedSymmetricKey: _encryptedSymmetricKey
+        });
+
+        emit PermissionRequested(requestId, msg.sender, _patientAddress);
+        return requestId;
     }
 
     function addApprovedRecord(
@@ -286,20 +341,57 @@ contract EHRmain is EHRStorage {
         return pendingRequests;
     }
 
-    function approvePermission(bytes32 _requestId) external returns (bool) {
-        PermissionRequest storage request = permissionRequests[_requestId];
-        require(request.owner == msg.sender, "Only owner can approve");
-        require(request.status == RequestStatus.PENDING, "Invalid request status");
-        require(block.timestamp <= request.expiryDate, "Request expired");
+/*
+    function approvePermission(uint256 requestId) public {
+        PermissionRequest storage request = permissionRequests[requestId];
+        require(request.to == msg.sender, "Only the patient can approve");
+        require(request.status == PermissionStatus.Pending, "Already processed");
 
-        request.status = RequestStatus.APPROVED;
-        permissions[request.owner][request.ipfsCid][request.requester] = true;
+        request.status = PermissionStatus.Approved;
 
-        if (request.isIncentiveBased) {
-            payable(request.owner).transfer(request.incentiveAmount);
+        // Store record if it's a Lab Result
+        if (keccak256(bytes(request.fileType)) == keccak256(bytes("Lab Result"))) {
+            healthRecords[request.to].push(HealthRecord({
+                ipfsCid: request.ipfsCid,
+                fileType: request.fileType,
+                testName: request.testName,
+                uploadedBy: request.from,
+                timestamp: block.timestamp
+            }));
         }
 
-        emit PermissionGranted(_requestId, request.requester, request.owner);
+        emit PermissionApproved(requestId, msg.sender);
+    }
+*/
+
+    // Patient Approval Function for Lab Results
+    function approveLabResultPermission(bytes32 requestId) external returns (bool) {
+        PermissionRequest storage request = permissionRequests[requestId];
+        require(request.owner == msg.sender, "Only the patient can approve");
+        require(request.status == RequestStatus.PENDING, "Request already processed");
+
+        request.status = RequestStatus.APPROVED;
+
+        TempLabResult memory tempResult = tempLabResults[requestId];
+        require(tempResult.patient == msg.sender, "Lab result not found for this request");
+
+        healthRecords[tempResult.ipfsCid] = HealthRecord({
+            owner: tempResult.patient,
+            ipfsCid: tempResult.ipfsCid,
+            dataType: DataType.LAB_RESULT,
+            encryptedSymmetricKey: tempResult.encryptedSymmetricKey,
+            timestamp: block.timestamp,
+            status: RecordStatus.VALID,
+            provider: tempResult.lab
+        });
+
+        ownerToHealthRecords[tempResult.patient].push(tempResult.ipfsCid);
+        totalRecords++;
+
+        delete tempLabResults[requestId];
+
+        emit HealthRecordAdded(tempResult.ipfsCid, tempResult.patient, DataType.LAB_RESULT);
+        emit PermissionGranted(requestId, request.requester, msg.sender);
         return true;
     }
 
