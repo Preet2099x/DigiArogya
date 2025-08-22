@@ -16,37 +16,80 @@ export const downloadFromIPFS = async (ipfsHash) => {
         // Handle different response formats
         let encryptedContent, fileName, fileType, dataType;
         
-        if (data.data && typeof data.data === 'object') {
-            // Case 1: Standard format with data.data object
-            if (data.data.encryptedContent) {
+        // Case 1: Standard format with data.data object
+        if (data && data.data) {
+            if (typeof data.data === 'object' && data.data.encryptedContent) {
                 encryptedContent = data.data.encryptedContent;
                 fileName = data.data.fileName || 'file';
                 fileType = data.data.fileType || 'unknown';
                 dataType = data.data.dataType;
             } 
-            // Case 2: JSON string that needs parsing
-            else if (typeof data === 'string') {
+            // Handle case where data.data is a string that needs parsing
+            else if (typeof data.data === 'string') {
                 try {
-                    const parsedData = JSON.parse(data);
-                    encryptedContent = parsedData.encryptedContent;
-                    fileName = parsedData.fileName || 'file';
-                    fileType = parsedData.fileType || 'unknown';
-                    dataType = parsedData.dataType;
+                    const parsedData = JSON.parse(data.data);
+                    if (parsedData && parsedData.encryptedContent) {
+                        encryptedContent = parsedData.encryptedContent;
+                        fileName = parsedData.fileName || 'file';
+                        fileType = parsedData.fileType || 'unknown';
+                        dataType = parsedData.dataType;
+                    }
                 } catch (e) {
                     console.error("Failed to parse JSON response:", e);
                 }
             }
         }
         
-        // Case 3: Direct response format
-        if (!encryptedContent && data && typeof data === 'object') {
-            encryptedContent = data.encryptedContent;
-            fileName = data.fileName || 'file';
-            fileType = data.fileType || 'unknown';
-            dataType = data.dataType;
+        // Case 2: Direct response format where data itself contains the content
+        if (!encryptedContent && data) {
+            if (typeof data === 'object' && data.encryptedContent) {
+                encryptedContent = data.encryptedContent;
+                fileName = data.fileName || 'file';
+                fileType = data.fileType || 'unknown';
+                dataType = data.dataType;
+            }
+            // Handle case where data is a string that needs parsing
+            else if (typeof data === 'string') {
+                try {
+                    const parsedData = JSON.parse(data);
+                    if (parsedData && parsedData.encryptedContent) {
+                        encryptedContent = parsedData.encryptedContent;
+                        fileName = parsedData.fileName || 'file';
+                        fileType = parsedData.fileType || 'unknown';
+                        dataType = parsedData.dataType;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse JSON string response:", e);
+                }
+            }
+        }
+        
+        // Case 3: Handle raw binary data response
+        if (!encryptedContent && data) {
+            try {
+                // If we have raw data but no structured content, try to use it directly
+                if (typeof data === 'string' && data.length > 0) {
+                    encryptedContent = data;
+                    fileName = 'file';
+                    fileType = 'unknown';
+                } else if (data instanceof ArrayBuffer || data instanceof Uint8Array) {
+                    // Convert binary data to base64 string
+                    const bytes = new Uint8Array(data);
+                    let binary = '';
+                    for (let i = 0; i < bytes.byteLength; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    encryptedContent = btoa(binary);
+                    fileName = 'file';
+                    fileType = 'unknown';
+                }
+            } catch (e) {
+                console.error("Failed to process raw data:", e);
+            }
         }
 
         if (!encryptedContent) {
+            console.error("Response data structure:", JSON.stringify(data, null, 2));
             throw new Error('Invalid response format. Missing encryptedContent.');
         }
 
