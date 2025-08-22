@@ -11,16 +11,44 @@ export const downloadFromIPFS = async (ipfsHash) => {
         }
 
         const data = await pinata.gateways.get(ipfsHash);
-        console.log(data);
+        console.log("IPFS Response:", data);
 
-        if (!data.data || !data.data.encryptedContent) {
-            throw new Error('Invalid response format. Missing encryptedContent.');
+        // Handle different response formats
+        let encryptedContent, fileName, fileType, dataType;
+        
+        if (data.data && typeof data.data === 'object') {
+            // Case 1: Standard format with data.data object
+            if (data.data.encryptedContent) {
+                encryptedContent = data.data.encryptedContent;
+                fileName = data.data.fileName || 'file';
+                fileType = data.data.fileType || 'unknown';
+                dataType = data.data.dataType;
+            } 
+            // Case 2: JSON string that needs parsing
+            else if (typeof data === 'string') {
+                try {
+                    const parsedData = JSON.parse(data);
+                    encryptedContent = parsedData.encryptedContent;
+                    fileName = parsedData.fileName || 'file';
+                    fileType = parsedData.fileType || 'unknown';
+                    dataType = parsedData.dataType;
+                } catch (e) {
+                    console.error("Failed to parse JSON response:", e);
+                }
+            }
+        }
+        
+        // Case 3: Direct response format
+        if (!encryptedContent && data && typeof data === 'object') {
+            encryptedContent = data.encryptedContent;
+            fileName = data.fileName || 'file';
+            fileType = data.fileType || 'unknown';
+            dataType = data.dataType;
         }
 
-        const fileName = data.data.fileName;
-        const fileType = data.data.fileType;
-        const dataType = data.data.dataType;
-        const encryptedContent = data.data.encryptedContent;
+        if (!encryptedContent) {
+            throw new Error('Invalid response format. Missing encryptedContent.');
+        }
 
         return { encryptedContent, fileType, fileName, dataType };
     } catch (error) {
