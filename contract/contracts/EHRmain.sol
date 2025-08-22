@@ -368,26 +368,25 @@ contract EHRmain is EHRStorage {
     {
         require(_careProvider != address(0), "Invalid care provider address");
 
-        uint256 pendingPrescriptionCount = 0;
+        // Count all approved records regardless of type
+        uint256 approvedRecordsCount = 0;
         for (uint i = 0; i < approvedRecords[_careProvider].length; i++) {
             approvedRecord storage ar = approvedRecords[_careProvider][i];
-            HealthRecord storage hr = healthRecords[ar.ipfsCid];
-            if (ar.status == true && hr.dataType == DataType.PRESCRIPTION && hr.status == RecordStatus.PENDING) {
-                pendingPrescriptionCount++;
+            if (ar.status == true) {
+                approvedRecordsCount++;
             }
         }
 
-        approvedRecord[] memory pendingPrescriptions = new approvedRecord[](pendingPrescriptionCount);
+        approvedRecord[] memory allApprovedRecords = new approvedRecord[](approvedRecordsCount);
         uint256 index = 0;
         for (uint j = 0; j < approvedRecords[_careProvider].length; j++) {
             approvedRecord storage ar = approvedRecords[_careProvider][j];
-            HealthRecord storage hr = healthRecords[ar.ipfsCid];
-            if (ar.status == true && hr.dataType == DataType.PRESCRIPTION && hr.status == RecordStatus.PENDING) {
-                pendingPrescriptions[index] = ar;
+            if (ar.status == true) {
+                allApprovedRecords[index] = ar;
                 index++;
             }
         }
-        return pendingPrescriptions;
+        return allApprovedRecords;
     }
 
     function getRecordsForResearcher(address requester, string memory recordId) 

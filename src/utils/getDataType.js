@@ -21,7 +21,7 @@ export const getDataTypeName = (dataType) => {
             return 'EHR';
         case 1:
             return 'PHR';
-        case 'LAB_RESULT':
+        case 2:
             return 'LAB_RESULT';
         case 3:
             return 'PRESCRIPTION';

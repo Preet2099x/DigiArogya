@@ -31,12 +31,12 @@ import { getDataTypeName } from "../../utils/getDataType";
 
 const DoctorDashboard = () => {
   const [patients, setPatients] = useState([
-    {
-      address: "0x123...",
-      recordCount: 3,
-      lastVisit: "2024-03-10",
-      status: "Active",
-    },
+    // {
+    //   address: "0x123...",
+    //   recordCount: 3,
+    //   lastVisit: "2024-03-10",
+    //   status: "Active",
+    // },
   ]);
 
   const [accessibleRecords, setAccessibleRecords] = useState([{}]);
@@ -151,6 +151,9 @@ const DoctorDashboard = () => {
         console.error(
           "Ethereum provider is not available. Please install MetaMask or a similar wallet."
         );
+        setAlertMessage("Ethereum provider is not available. Please install MetaMask or a similar wallet.");
+        setAlertSeverity("error");
+        setOpenAlert(true);
         return;
       }
 
@@ -163,14 +166,41 @@ const DoctorDashboard = () => {
         contractABI.abi,
         signer
       );
+      
+      // Set loading state if needed
+      // setIsLoading(true);
+      
       const records = await contract.getRecordsByCareProvider(
         careProviderAddress
       );
-      console.log(records);
-      setAccessibleRecords(records);
+      
+      console.log("Records fetched:", records);
+      
+      // Validate records before setting state
+      if (!records) {
+        console.warn("No records returned from contract");
+        setAccessibleRecords([]);
+        return;
+      }
+      
+      // Process records to ensure they're in the expected format
+      const processedRecords = Array.isArray(records) ? records : [];
+      setAccessibleRecords(processedRecords);
+      
+      if (processedRecords.length === 0) {
+        setAlertMessage("No records found for your account");
+        setAlertSeverity("info");
+        setOpenAlert(true);
+      }
     } catch (error) {
       console.error("Error fetching records:", error);
-      throw error;
+      setAlertMessage(`Failed to fetch records: ${error.message || "Unknown error"}`);
+      setAlertSeverity("error");
+      setOpenAlert(true);
+      setAccessibleRecords([]);
+    } finally {
+      // Reset loading state if needed
+      // setIsLoading(false);
     }
   }
 
@@ -407,45 +437,67 @@ const DoctorDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {accessibleRecords.map((record) => (
-                      <tr
-                        key={record.dataHash}
-                        style={{ borderBottom: "1px solid #e0e0e0" }}
-                      >
-                        <td style={{ padding: "12px" }}>{record[0]}</td>
-                        <td style={{ padding: "12px" }}>
-                          {getDataTypeName(Number(record[3]))}
-                        </td>
-                        <td style={{ padding: "12px" }}>
-                          {format(
-                            new Date(Number(record[5]) * 1000),
-                            "MM/dd/yyyy"
-                          )}
-                        </td>
-                        <td style={{ padding: "12px" }}>
-                          {format(
-                            new Date(Number(record[6]) * 1000),
-                            "MM/dd/yyyy"
-                          )}
-                        </td>
-                        <td style={{ padding: "12px" }}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            sx={{ marginRight: 1 }}
-                            onClick={() => {
-                              handleDownloadDialog(true);
-                              setHashForDownload(record.ipfsCid);
-                              setEncryptedSymmetricKey(
-                                record.encryptedSymmetricKey
-                              );
-                            }}
-                          >
-                            View
-                          </Button>
+                    {accessibleRecords && accessibleRecords.length > 0 ? (
+                      accessibleRecords.map((record, index) => {
+                        try {
+                          // Ensure record exists and has necessary properties
+                          if (!record) return null;
+                          
+                          // Debug log to see record structure
+                          console.log(`Record ${index}:`, record);
+                          
+                          return (
+                            <tr
+                              key={`record-${index}`}
+                              style={{ borderBottom: "1px solid #e0e0e0" }}
+                            >
+                              <td style={{ padding: "12px" }}>
+                                {record.owner || "Unknown"}
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.dataType !== undefined ? getDataTypeName(Number(record.dataType)) : "Unknown"}
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.approvedDate !== undefined ? 
+                                  format(new Date(Number(record.approvedDate) * 1000), "MM/dd/yyyy") : 
+                                  "Unknown"
+                                }
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.expiryDate !== undefined ? 
+                                  format(new Date(Number(record.expiryDate) * 1000), "MM/dd/yyyy") : 
+                                  "Unknown"
+                                }
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  sx={{ marginRight: 1 }}
+                                  onClick={() => {
+                                    handleDownloadDialog(true);
+                                    setHashForDownload(record.ipfsCid);
+                                    setEncryptedSymmetricKey(record.encryptedSymmetricKey);
+                                  }}
+                                  disabled={!record.ipfsCid || !record.encryptedSymmetricKey}
+                                >
+                                  View
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        } catch (error) {
+                          console.error("Error rendering record:", error, record);
+                          return null;
+                        }
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "12px", textAlign: "center" }}>
+                          No records available
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </Box>
