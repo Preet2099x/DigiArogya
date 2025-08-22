@@ -413,109 +413,96 @@ const DoctorDashboard = () => {
         )}
 
         {tabValue === 1 && (
-          <Box sx={{ marginTop: 4 }}>
-            {accessibleRecords && accessibleRecords.length > 0 ? (
-              (() => {
-                // Group records by patient address
-                const recordsByPatient = {};
-                accessibleRecords.forEach(record => {
-                  if (record && record.owner) {
-                    if (!recordsByPatient[record.owner]) {
-                      recordsByPatient[record.owner] = [];
-                    }
-                    recordsByPatient[record.owner].push(record);
-                  }
-                });
-
-                // Render each patient's records in a separate card
-                return Object.keys(recordsByPatient).map((patientAddress, patientIndex) => (
-                  <Card 
-                    key={`patient-${patientIndex}`} 
-                    sx={{ 
-                      marginBottom: 3, 
-                      border: '1px solid #e0e0e0',
-                      borderRadius: 2,
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <Box 
-                      sx={{ 
-                        padding: 2, 
-                        backgroundColor: '#f5f5f5',
-                        borderBottom: '1px solid #e0e0e0',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        Patient's Address: {patientAddress}
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        sx={{ 
-                          backgroundColor: '#fff', 
-                          color: '#000',
-                          '&:hover': {
-                            backgroundColor: '#f0f0f0'
-                          }
-                        }}
-                      >
-                        Process Transaction
-                      </Button>
-                    </Box>
-                    <CardContent>
-                      <Box sx={{ padding: 2, border: '1px solid #e0e0e0', borderRadius: 1, mb: 2 }}>
-                        {recordsByPatient[patientAddress].map((record, recordIndex) => (
-                          <Box 
-                            key={`record-${patientIndex}-${recordIndex}`}
-                            sx={{ 
-                              padding: 2, 
-                              mb: recordIndex < recordsByPatient[patientAddress].length - 1 ? 2 : 0,
-                              border: '1px solid #e0e0e0',
-                              borderRadius: 1
-                            }}
-                          >
-                            <Typography>
-                              <strong>Record Type:</strong> {record.dataType !== undefined ? getDataTypeName(Number(record.dataType)) : "NA"}
-                            </Typography>
-                            <Typography>
-                              <strong>Date:</strong> {record.approvedDate !== undefined ? 
-                                format(new Date(Number(record.approvedDate) * 1000), "MM/dd/yyyy") : 
-                                "Unknown"
-                              }
-                            </Typography>
-                            <Typography>
-                              <strong>Patient:</strong> {record.owner || "Unknown"}
-                            </Typography>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              sx={{ marginTop: 1 }}
-                              onClick={() => {
-                                handleDownloadDialog(true);
-                                setHashForDownload(record.ipfsCid);
-                                setEncryptedSymmetricKey(record.encryptedSymmetricKey);
-                              }}
-                              disabled={!record.ipfsCid || !record.encryptedSymmetricKey}
+          <Card sx={{ marginTop: 4 }}>
+            <CardContent>
+              <Box overflow="auto">
+                <table style={{ width: "100%" }}>
+                  <thead style={{ backgroundColor: "#f0f0f0" }}>
+                    <tr>
+                      <th style={{ padding: "12px", textAlign: "left" }}>
+                        Patient
+                      </th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>
+                        Record Type
+                      </th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>
+                        Date Created
+                      </th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>
+                        Access Until
+                      </th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accessibleRecords && accessibleRecords.length > 0 ? (
+                      accessibleRecords.map((record, index) => {
+                        try {
+                          // Ensure record exists and has necessary properties
+                          if (!record) return null;
+                          
+                          // Debug log to see record structure
+                          console.log(`Record ${index}:`, record);
+                          
+                          return (
+                            <tr
+                              key={`record-${index}`}
+                              style={{ borderBottom: "1px solid #e0e0e0" }}
                             >
-                              View Record
-                            </Button>
-                          </Box>
-                        ))}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ));
-              })()
-            ) : (
-              <Card sx={{ marginTop: 4 }}>
-                <CardContent>
-                  <Typography align="center">No records available</Typography>
-                </CardContent>
-              </Card>
-            )}
-          </Box>
+                              <td style={{ padding: "12px" }}>
+                                {record.owner || "Unknown"}
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.dataType !== undefined ? getDataTypeName(Number(record.dataType)) : "Unknown"}
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.approvedDate !== undefined ? 
+                                  format(new Date(Number(record.approvedDate) * 1000), "MM/dd/yyyy") : 
+                                  "Unknown"
+                                }
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                {record.expiryDate !== undefined ? 
+                                  format(new Date(Number(record.expiryDate) * 1000), "MM/dd/yyyy") : 
+                                  "Unknown"
+                                }
+                              </td>
+                              <td style={{ padding: "12px" }}>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  sx={{ marginRight: 1 }}
+                                  onClick={() => {
+                                    handleDownloadDialog(true);
+                                    setHashForDownload(record.ipfsCid);
+                                    setEncryptedSymmetricKey(record.encryptedSymmetricKey);
+                                  }}
+                                  disabled={!record.ipfsCid || !record.encryptedSymmetricKey}
+                                >
+                                  View
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        } catch (error) {
+                          console.error("Error rendering record:", error, record);
+                          return null;
+                        }
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "12px", textAlign: "center" }}>
+                          No records available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </Box>
+            </CardContent>
+          </Card>
         )}
 
         {tabValue === 2 && <FileUploader userRole={"Provider"} />}

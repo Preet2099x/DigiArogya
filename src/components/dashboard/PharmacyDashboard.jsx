@@ -21,7 +21,7 @@ import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
 import FileDownloader from '../files/FileDownloader';
-import { LocalPharmacy, AccessTime, Person, Description } from '@mui/icons-material';
+import { LocalPharmacy, AccessTime, Person, Description, Refresh as RefreshIcon } from '@mui/icons-material';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -57,6 +57,23 @@ const PharmacyDashboard = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const checkPrescriptionStatus = async (ipfsCid) => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+      
+      // Get the record status from the blockchain
+      const recordData = await contract.getHealthRecordByIpfs(ipfsCid);
+      // According to recordStatusMap in PatientDashboard.jsx:
+      // 0: "Pending", 1: "Completed", 2: "Valid", 3: "Invalid"
+      return Number(recordData.status) === 1; // Return true if prescription is processed (COMPLETED)
+    } catch (error) {
+      console.error(`Error checking prescription status for ${ipfsCid}:`, error);
+      return false; // Assume not processed in case of error
+    }
+  };
+
   const fetchApprovedRecords = async () => {
     try {
       setIsLoading(true);
@@ -68,7 +85,7 @@ const PharmacyDashboard = () => {
       const records = await contract.getRecordsByCareProvider(await signer.getAddress());
       
       // Filter for records of type PRESCRIPTION
-      const formattedRecords = records
+      let formattedRecords = records
         .filter(record => Number(record.dataType) === 3) // PRESCRIPTION type
         .map((record, index) => ({
           id: index,
@@ -77,8 +94,18 @@ const PharmacyDashboard = () => {
           patientAddress: record.owner,
           ipfsCid: record.ipfsCid,
           encryptedSymmetricKey: record.encryptedSymmetricKey,
-          isProcessing: false // <-- Add this line
+          isProcessing: false,
+          status: 'Pending' // Default status for UI clarity
         }));
+
+      // Check status of each prescription and filter out processed ones
+      const statusChecks = await Promise.all(
+        formattedRecords.map(record => checkPrescriptionStatus(record.ipfsCid))
+      );
+      
+      // Filter out processed prescriptions
+      formattedRecords = formattedRecords.filter((record, index) => !statusChecks[index]);
+      console.log(`Filtered out ${statusChecks.filter(status => status).length} completed prescriptions`);
 
       setPatientRecords(formattedRecords);
       
@@ -101,7 +128,23 @@ const PharmacyDashboard = () => {
     if (tabValue === 1) {
       fetchApprovedRecords();
     }
+    
+    // Set up refresh interval to periodically check for processed prescriptions
+    const refreshInterval = setInterval(() => {
+      if (tabValue === 1 && !isLoading) {
+        fetchApprovedRecords();
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, [tabValue]);
+  
+  // Add an effect to refresh records when the component mounts
+  useEffect(() => {
+    if (tabValue === 1) {
+      fetchApprovedRecords();
+    }
+  }, []);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -225,7 +268,7 @@ const PharmacyDashboard = () => {
           const signer = await provider.getSigner();
           const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
 
-          // Call the new smart contract function
+          // Call the smart contract function to process the prescription
           const tx = await contract.processPrescription(clickedRecord.ipfsCid);
 
           setAlertMessage('Processing transaction... please wait for confirmation.');
@@ -234,10 +277,10 @@ const PharmacyDashboard = () => {
 
           await tx.wait(); // Wait for the transaction to be mined
 
-          // On success, remove the record from the UI
+          // On success, immediately remove the record from the UI
           setPatientRecords(prevRecords => prevRecords.filter(r => r.ipfsCid !== clickedRecord.ipfsCid));
 
-          setAlertMessage('Prescription processed successfully!');
+          setAlertMessage('Prescription processed successfully! Status changed to Completed.');
           setAlertSeverity('success');
           setOpenAlert(true);
 
@@ -335,9 +378,20 @@ const PharmacyDashboard = () => {
 
       {/* 🟢 Approved Records Tab (Restored Code) */}
       <TabPanel value={tabValue} index={1}>
-        <Typography variant="h6" gutterBottom sx={{ color: '#1976D2', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Description /> Approved Patient Records
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ color: '#1976D2', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Description /> Approved Patient Records
+          </Typography>
+          <Button 
+            variant="outlined" 
+            onClick={fetchApprovedRecords}
+            disabled={isLoading}
+            startIcon={<RefreshIcon />}
+            sx={{ borderRadius: 2 }}
+          >
+            Refresh
+          </Button>
+        </Box>
 
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -430,6 +484,9 @@ const PharmacyDashboard = () => {
           >
             <Typography color="text.secondary">
               No accessible records found. Use the "Request Access" tab to request permission from patients.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              All processed prescriptions have been automatically filtered out.
             </Typography>
           </Paper>
         )}

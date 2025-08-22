@@ -66,7 +66,10 @@ const PatientDashboard = () => {
         timestamp: Number(record.timestamp),
         status: recordStatusMap[Number(record.status)],
         encryptedSymmetricKey: record.encryptedSymmetricKey,
+        recordStatus: Number(record.status) // Store the raw status value for filtering
       }));
+      
+      // Show all records including completed ones
       setHealthRecords(fetchedRecords.reverse());
     } catch (error) {
       console.error("Error fetching health records:", error);
