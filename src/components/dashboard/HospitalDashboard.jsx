@@ -8,6 +8,7 @@ import {
 import { LocalHospital, Hotel, MedicalServices, ArrowBack } from '@mui/icons-material';
 import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
+import LogoutButton from '../ui/LogoutButton';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -68,8 +69,31 @@ const HospitalDashboard = () => {
         toast.error("Please enter a valid patient wallet address.");
         return;
     }
+    
+    // Check if patient name is provided
+    if (!patientInfo.name.trim()) {
+        toast.error("Please enter patient name.");
+        return;
+    }
+    
+    // Verify bed is available before proceeding
+    const floor = floors.find(f => f.id === bedBookingDetails.floorId);
+    const roomType = bedBookingDetails.roomType.toLowerCase();
+    
+    if (!floor || !floor.rooms[roomType] || floor.rooms[roomType].available <= 0) {
+        toast.error("This bed type is no longer available.");
+        handleCloseBedDialog();
+        return;
+    }
+    
     setIsBooking(true);
     try {
+        // Validate patient address
+        if (!patientInfo.address || !ethers.isAddress(patientInfo.address)) {
+            toast.error("Please enter a valid patient wallet address");
+            return;
+        }
+
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
@@ -77,14 +101,40 @@ const HospitalDashboard = () => {
         const hospitalName = "Central City Hospital";
         const appointmentDetails = `BED|${bedBookingDetails.roomType}|${bedBookingDetails.floorName}`;
 
-        const tx = await contract.bookAppointment(patientInfo.address, hospitalName, appointmentDetails);
+        toast.info("Processing bed booking transaction...");
+        
+        // Proceed with the transaction directly
+        const tx = await contract.bookAppointment(patientInfo.address, hospitalName, appointmentDetails, {
+            gasLimit: 500000 // Set a higher gas limit to ensure transaction goes through
+        });
+        
+        toast.info("Transaction submitted. Waiting for confirmation...");
         await tx.wait();
 
-        toast.success(`Bed booked for ${patientInfo.name}.`);
+        // Update the available bed count after successful booking
+        setFloors(prevFloors => prevFloors.map(floor => {
+            if (floor.id === bedBookingDetails.floorId) {
+                const updatedRooms = {
+                    ...floor.rooms,
+                    [roomType]: {
+                        ...floor.rooms[roomType],
+                        available: Math.max(0, floor.rooms[roomType].available - 1)
+                    }
+                };
+                return { ...floor, rooms: updatedRooms };
+            }
+            return floor;
+        }));
+
+        toast.success(`Bed booked successfully for ${patientInfo.name}.`);
         handleCloseBedDialog();
     } catch (error) {
         console.error("Error booking bed:", error);
-        toast.error(error?.reason || "Failed to book bed.");
+        if (error.code === 'ACTION_REJECTED') {
+            toast.error("Transaction was rejected by the user.");
+        } else {
+            toast.error(error?.reason || "Failed to book bed. Please try again.");
+        }
     } finally {
         setIsBooking(false);
     }
@@ -138,6 +188,7 @@ const HospitalDashboard = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <LocalHospital sx={{ fontSize: 40 }} />
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>Hospital Dashboard</Typography>
+          <LogoutButton sx={{ ml: 'auto' }} />
         </Box>
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)', '&.Mui-selected': { color: 'white' }}, '& .MuiTabs-indicator': { backgroundColor: 'white' }}}>
           <Tab icon={<LocalHospital />} label="Doctors" />

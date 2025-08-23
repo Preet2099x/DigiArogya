@@ -22,6 +22,7 @@ import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
 import FileDownloader from '../files/FileDownloader';
 import { LocalPharmacy, AccessTime, Person, Description, Refresh as RefreshIcon } from '@mui/icons-material';
+import LogoutButton from '../ui/LogoutButton';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -309,11 +310,14 @@ const PharmacyDashboard = () => {
       background: 'linear-gradient(120deg, #2196F3 0%, #1976D2 100%)',
       color: 'white'
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <LocalPharmacy sx={{ fontSize: 40 }} />
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-          Pharmacy Dashboard
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <LocalPharmacy sx={{ fontSize: 40 }} />
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+            Pharmacy Dashboard
+          </Typography>
+        </Box>
+        <LogoutButton />
       </Box>
       <Tabs 
         value={tabValue} 

@@ -4,6 +4,7 @@ import FileDownloader from '../files/FileDownloader';
 import { ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
+import LogoutButton from '../ui/LogoutButton';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -133,9 +134,12 @@ const AmbulanceDashboard = () => {
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Emergency Access Portal
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">
+          Emergency Access Portal
+        </Typography>
+        <LogoutButton />
+      </Box>
 
       {/* Emergency Access Form */}
       <Card sx={{ mb: 3, bgcolor: '#fff3e0' }}>
