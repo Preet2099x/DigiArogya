@@ -274,7 +274,7 @@ const DoctorDashboard = () => {
 
         {tabValue === 0 && (
           <Box mt={4}>
-            <Box
+            {/* <Box
               display="flex"
               justifyContent="space-between"
               alignItems="center"
@@ -293,7 +293,7 @@ const DoctorDashboard = () => {
                   New Patient
                 </Button>
               </Box>
-            </Box>
+            </Box> */}
 
             <Card sx={{ marginTop: 2 }}>
               <CardContent>

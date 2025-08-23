@@ -8,8 +8,9 @@ contract EHRmain is EHRStorage {
     modifier onlyProvider() {
         require(
             users[msg.sender].role == Role.DOCTOR ||
-                users[msg.sender].role == Role.HOSPITAL ||
-                users[msg.sender].role == Role.LAB,
+            users[msg.sender].role == Role.HOSPITAL ||
+            users[msg.sender].role == Role.LAB ||
+            users[msg.sender].role == Role.INSURANCE, // <-- ADD THIS LINE
             "Only healthcare providers can call this function"
         );
         _;
