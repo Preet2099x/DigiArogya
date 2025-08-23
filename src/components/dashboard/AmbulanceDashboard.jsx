@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Dialog, TextField, Alert, Card, CardContent, CircularProgress } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  Dialog, 
+  TextField, 
+  Alert, 
+  Card, 
+  CardContent, 
+  CircularProgress,
+  Paper,
+  Tooltip,
+  IconButton,
+  Snackbar,
+  Fade
+} from '@mui/material';
 import FileDownloader from '../files/FileDownloader';
-import { ethers } from 'ethers';
+import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
 import LogoutButton from '../ui/LogoutButton';
+import { LocalHospital, AccessTime, Person, Description, Refresh as RefreshIcon } from '@mui/icons-material';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -84,48 +100,7 @@ const AmbulanceDashboard = () => {
     }
   };
 
-  const handleBatchAccessRequest = async () => {
-    try {
-      if (!patientAddress) {
-        setAlertMessage('Please enter patient\'s address');
-        setAlertSeverity('warning');
-        setOpenAlert(true);
-        return;
-      }
-
-      setIsLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
-
-      // Request batch access
-      const tx = await contract.requestBatchAccess(patientAddress);
-      await tx.wait();
-
-      setAlertMessage('Batch access request sent successfully. Waiting for patient approval.');
-      setAlertSeverity('success');
-      setOpenAlert(true);
-    } catch (error) {
-      console.error('Batch access request error:', error);
-      let errorMessage = 'Failed to request batch access';
-
-      if (error.message.includes('Invalid owner address')) {
-        errorMessage = 'Invalid patient address provided';
-      } else if (error.message.includes('Owner must be a patient')) {
-        errorMessage = 'The provided address is not registered as a patient';
-      } else if (error.message.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected by user';
-      } else {
-        errorMessage += ': ' + (error.reason || error.message);
-      }
-
-      setAlertMessage(errorMessage);
-      setAlertSeverity('error');
-      setOpenAlert(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Removed batch access request function as it's no longer needed
 
   const handleDownload = (record) => {
     setSelectedRecord(record);
@@ -133,20 +108,27 @@ const AmbulanceDashboard = () => {
   };
 
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">
-          Emergency Access Portal
-        </Typography>
-        <LogoutButton />
-      </Box>
+    <Box sx={{ width: '100%', p: 3, bgcolor: '#fef6f6' }}>
+      <Paper elevation={3} sx={{ p: 2, mb: 3, bgcolor: '#fff', borderTop: '4px solid #d32f2f' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <LocalHospital sx={{ color: '#d32f2f', mr: 1 }} />
+            <Typography variant="h5" sx={{ color: '#d32f2f', fontWeight: 'bold' }}>
+              Ambulance Emergency Portal
+            </Typography>
+          </Box>
+          <LogoutButton />
+        </Box>
+      </Paper>
 
       {/* Emergency Access Form */}
-      <Card sx={{ mb: 3, bgcolor: '#fff3e0' }}>
-        <CardContent>
-          <Typography variant="h6" color="error" gutterBottom>
+      <Paper elevation={3} sx={{ mb: 3, overflow: 'hidden', borderRadius: 2 }}>
+        <Box sx={{ bgcolor: '#d32f2f', p: 2, color: 'white' }}>
+          <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
             Emergency Access
           </Typography>
+        </Box>
+        <Box sx={{ p: 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Use this form to get immediate access to patient's critical medical records in emergency situations.
           </Typography>
@@ -160,65 +142,72 @@ const AmbulanceDashboard = () => {
               disabled={isLoading}
             />
             <Button
-              variant="contained"
-              color="error"
-              onClick={handleEmergencyAccess}
-              sx={{ height: 56 }}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Get Emergency Access'
-              )}
-            </Button>
+               variant="contained"
+               color="error"
+               onClick={handleEmergencyAccess}
+               disabled={isLoading}
+               sx={{ height: 56 }}
+               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+             >
+               {isLoading ? 'Processing...' : 'Get Emergency Access'}
+             </Button>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-            <Button
-              variant="outlined"
-              onClick={handleBatchAccessRequest}
-              sx={{ height: 40 }}
-              disabled={isLoading}
-            >
-              Request Batch Access
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Paper>
 
       {/* Accessible Records Section */}
-      <Typography variant="h6" gutterBottom>
-        Available Emergency Records
-      </Typography>
-      {emergencyRecords.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          No emergency records available. Use the form above to request access.
-        </Typography>
-      ) : (
-        emergencyRecords.map((record) => (
-          <Card key={record.id} sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="subtitle1">
-                Record Type: {record.type}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Date: {new Date(record.timestamp * 1000).toLocaleDateString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Patient: {record.patientAddress}
-              </Typography>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => handleDownload(record)}
-                sx={{ mt: 1 }}
-              >
-                View Record
-              </Button>
-            </CardContent>
-          </Card>
-        ))
-      )}
+      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ color: '#d32f2f', fontWeight: 'medium' }}>
+            Available Emergency Records
+          </Typography>
+          <Tooltip title="Refresh Records">
+            <IconButton onClick={handleEmergencyAccess} disabled={isLoading} color="error">
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        
+        {emergencyRecords.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Description sx={{ fontSize: 60, color: '#e0e0e0', mb: 2 }} />
+            <Typography variant="body1" color="text.secondary">
+              No emergency records available. Use the form above to request access.
+            </Typography>
+          </Box>
+        ) : (
+          emergencyRecords.map((record) => (
+            <Paper key={record.id} sx={{ mb: 2, p: 2, border: '1px solid #f5f5f5' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium', color: '#d32f2f' }}>
+                    {record.type}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <AccessTime sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(record.timestamp * 1000).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                    <Person sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                      {record.patientAddress.substring(0, 8)}...{record.patientAddress.substring(record.patientAddress.length - 6)}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => handleDownload(record)}
+                >
+                  View Record
+                </Button>
+              </Box>
+            </Paper>
+          ))
+        )}
 
       {/* File Download Dialog */}
       <Dialog open={openDownloadDialog} onClose={() => setOpenDownloadDialog(false)}>
@@ -231,24 +220,24 @@ const AmbulanceDashboard = () => {
       </Dialog>
 
       {/* Alert */}
-      <Alert
-        severity={alertSeverity}
+</Paper>
+
+      <Snackbar
+        open={openAlert}
+        autoHideDuration={6000}
         onClose={() => setOpenAlert(false)}
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: openAlert ? 'flex' : 'none',
-          zIndex: 9999,
-          maxWidth: '80%',
-          '& .MuiAlert-message': {
-            maxWidth: '100%',
-            wordBreak: 'break-word'
-          }
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        TransitionComponent={Fade}
       >
-        {alertMessage}
-      </Alert>
+        <Alert
+          severity={alertSeverity}
+          onClose={() => setOpenAlert(false)}
+          variant="filled"
+          sx={{ width: '100%', boxShadow: 3 }}
+        >
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
