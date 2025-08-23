@@ -295,4 +295,136 @@ contract EHRFeatures is EHRStorage {
         );
         return patientAppointments[_patientAddress];
     }
+
+    // --- Insurance Claim Functions ---
+    function submitInsuranceClaim(
+        string memory _claimId,
+        string memory _insuranceProvider,
+        string memory _insurancePlan,
+        string memory _diagnosis,
+        string memory _hospitalName,
+        uint256 _claimAmount,
+        string memory _medicalReportHash
+    ) external returns (bool) {
+        require(users[msg.sender].role == Role.PATIENT, "Only patients can submit insurance claims");
+        require(bytes(_claimId).length > 0, "Claim ID cannot be empty");
+        require(bytes(_insuranceProvider).length > 0, "Insurance provider cannot be empty");
+        require(bytes(_diagnosis).length > 0, "Diagnosis cannot be empty");
+        require(_claimAmount > 0, "Claim amount must be greater than 0");
+
+        bytes32 claimHash = keccak256(abi.encodePacked(_claimId));
+        require(insuranceClaims[claimHash].claimant == address(0), "Claim ID already exists");
+
+        InsuranceClaim memory newClaim = InsuranceClaim({
+            claimId: _claimId,
+            claimant: msg.sender,
+            insuranceProvider: _insuranceProvider,
+            insurancePlan: _insurancePlan,
+            diagnosis: _diagnosis,
+            hospitalName: _hospitalName,
+            claimAmount: _claimAmount,
+            medicalReportHash: _medicalReportHash,
+            submissionDate: block.timestamp,
+            status: ClaimStatus.PENDING,
+            approvedAmount: 0,
+            rejectionReason: ""
+        });
+
+        insuranceClaims[claimHash] = newClaim;
+        patientClaims[msg.sender].push(claimHash);
+        allClaimHashes.push(claimHash);
+
+        emit InsuranceClaimSubmitted(
+            _claimId,
+            msg.sender,
+            _insuranceProvider,
+            _claimAmount,
+            block.timestamp
+        );
+
+        return true;
+    }
+
+    function getPatientClaims(address _patient) 
+        external 
+        view 
+        returns (InsuranceClaim[] memory) 
+    {
+        require(
+            msg.sender == _patient || 
+            users[msg.sender].role == Role.INSURANCE || 
+            users[msg.sender].role == Role.HOSPITAL,
+            "Not authorized to view claims"
+        );
+
+        bytes32[] memory claimHashes = patientClaims[_patient];
+        InsuranceClaim[] memory claims = new InsuranceClaim[](claimHashes.length);
+
+        for (uint i = 0; i < claimHashes.length; i++) {
+            claims[i] = insuranceClaims[claimHashes[i]];
+        }
+
+        return claims;
+    }
+
+    function getAllInsuranceClaims() 
+        external 
+        view 
+        returns (InsuranceClaim[] memory) 
+    {
+        require(
+            users[msg.sender].role == Role.INSURANCE || 
+            users[msg.sender].role == Role.HOSPITAL ||
+            msg.sender == systemOwner,
+            "Not authorized to view all claims"
+        );
+
+        InsuranceClaim[] memory claims = new InsuranceClaim[](allClaimHashes.length);
+
+        for (uint i = 0; i < allClaimHashes.length; i++) {
+            claims[i] = insuranceClaims[allClaimHashes[i]];
+        }
+
+        return claims;
+    }
+
+    function approveInsuranceClaim(
+        string memory _claimId,
+        uint256 _approvedAmount
+    ) external returns (bool) {
+        require(
+            users[msg.sender].role == Role.INSURANCE,
+            "Only insurance providers can approve claims"
+        );
+        require(_approvedAmount > 0, "Approved amount must be greater than 0");
+
+        bytes32 claimHash = keccak256(abi.encodePacked(_claimId));
+        require(insuranceClaims[claimHash].claimant != address(0), "Claim does not exist");
+        require(insuranceClaims[claimHash].status == ClaimStatus.PENDING, "Claim is not pending");
+
+        insuranceClaims[claimHash].status = ClaimStatus.APPROVED;
+        insuranceClaims[claimHash].approvedAmount = _approvedAmount;
+
+        return true;
+    }
+
+    function rejectInsuranceClaim(
+        string memory _claimId,
+        string memory _rejectionReason
+    ) external returns (bool) {
+        require(
+            users[msg.sender].role == Role.INSURANCE,
+            "Only insurance providers can reject claims"
+        );
+        require(bytes(_rejectionReason).length > 0, "Rejection reason cannot be empty");
+
+        bytes32 claimHash = keccak256(abi.encodePacked(_claimId));
+        require(insuranceClaims[claimHash].claimant != address(0), "Claim does not exist");
+        require(insuranceClaims[claimHash].status == ClaimStatus.PENDING, "Claim is not pending");
+
+        insuranceClaims[claimHash].status = ClaimStatus.REJECTED;
+        insuranceClaims[claimHash].rejectionReason = _rejectionReason;
+
+        return true;
+    }
 }
