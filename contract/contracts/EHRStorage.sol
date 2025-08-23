@@ -45,6 +45,14 @@ contract EHRStorage {
     }
     enum RecordStatus { PENDING, COMPLETED, VALID, INVALID }
 
+    // Insurance claim status
+    enum ClaimStatus {
+        PENDING,
+        APPROVED,
+        REJECTED,
+        PROCESSING
+    }
+
     // Structs for storing user data
     struct User {
         address userAddress;
@@ -103,6 +111,22 @@ contract EHRStorage {
         uint256 bookingDate;
     }
 
+    // Struct for insurance claims
+    struct InsuranceClaim {
+        string claimId;
+        address claimant;
+        string insuranceProvider;
+        string insurancePlan;
+        string diagnosis;
+        string hospitalName;
+        uint256 claimAmount;
+        string medicalReportHash;
+        uint256 submissionDate;
+        ClaimStatus status;
+        uint256 approvedAmount;
+        string rejectionReason;
+    }
+
     // State variables
     mapping(address => User) public users;
     mapping(string => HealthRecord) public healthRecords;
@@ -114,6 +138,9 @@ contract EHRStorage {
     mapping(address => KeyPair) public userKeys;
     mapping(address => mapping(address => bool)) public emergencyAccesses;
     mapping(address => Appointment[]) public patientAppointments;
+    mapping(bytes32 => InsuranceClaim) public insuranceClaims;
+    mapping(address => bytes32[]) public patientClaims;
+    bytes32[] public allClaimHashes;
 
     // System variables
     address public systemOwner;
@@ -150,6 +177,13 @@ contract EHRStorage {
         string hospitalName,
         string roomType,
         uint256 bookingDate
+    );
+    event InsuranceClaimSubmitted(
+        string indexed claimId,
+        address indexed claimant,
+        string insuranceProvider,
+        uint256 claimAmount,
+        uint256 submissionDate
     );
     
     // Implementation upgraded event
