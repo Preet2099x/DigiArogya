@@ -20,7 +20,7 @@ import { BrowserProvider, ethers } from 'ethers';
 import contractABI from '../../contractABI.json';
 import { getDataTypeName } from '../../utils/getDataType';
 import LogoutButton from '../ui/LogoutButton';
-import { LocalHospital, AccessTime, Person, Description, Refresh as RefreshIcon } from '@mui/icons-material';
+import { LocalHospital, AccessTime, Person, Description} from '@mui/icons-material';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
@@ -161,11 +161,6 @@ const AmbulanceDashboard = () => {
           <Typography variant="h6" sx={{ color: '#d32f2f', fontWeight: 'medium' }}>
             Available Emergency Records
           </Typography>
-          <Tooltip title="Refresh Records">
-            <IconButton onClick={handleEmergencyAccess} disabled={isLoading} color="error">
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
         </Box>
         
         {emergencyRecords.length === 0 ? (
