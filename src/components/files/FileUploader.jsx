@@ -1,3 +1,5 @@
+// src/components/files/FileUploader.js
+
 import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import CryptoJS from 'crypto-js';
 import { BrowserProvider, ethers } from 'ethers';
@@ -9,11 +11,14 @@ import { uploadToIPFS } from '../../services/ipfs/ipfsUploader';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
-const FileUploader = ({ onClose, onUpload, userRole }) => {
+// MODIFICATION 1: Accept the new 'fixedDataType' prop
+const FileUploader = ({ onClose, onUpload, userRole, fixedDataType }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [loading, setLoading] = useState(false);
-    // <-- FIX 1: The state should hold the numeric value. Default to '1' for PHR.
-    const [dataType, setDataType] = useState('1'); 
+    
+    // MODIFICATION 2: Use 'fixedDataType' if it exists, otherwise default to '1' (PHR)
+    const [dataType, setDataType] = useState(fixedDataType || '1'); 
+
     const [error, setError] = useState('');
     const [patientAddress, setPatientAddress] = useState('');
 
@@ -22,11 +27,12 @@ const FileUploader = ({ onClose, onUpload, userRole }) => {
         setSelectedFile(file);
     };
 
+    // This handler is no longer needed if the dropdown is hidden, but we keep it for reusability
     const handleDataTypeChange = (event) => setDataType(event.target.value);
 
     const handlePatientAddressChange = (event) => setPatientAddress(event.target.value);
 
-const handleFileUpload = async () => {
+    const handleFileUpload = async () => {
         if (!selectedFile || !dataType) {
             setError('Please select both a file and data type.');
             return;
@@ -38,10 +44,9 @@ const handleFileUpload = async () => {
         }
 
         setLoading(true);
-        setError(''); // Clear previous errors
+        setError('');
 
         try {
-            // Step 1: Encrypt the file and symmetric key
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, contractABI.abi, signer);
@@ -50,18 +55,15 @@ const handleFileUpload = async () => {
             const base64Content = await encryptFileToBase64(selectedFile, symmetricKey);
             const encryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, publicKeyForEncryption);
 
-            // Step 2: Create the JSON payload with encrypted data and file metadata.
             const ipfsPayload = {
                 encryptedContent: base64Content,
                 fileName: selectedFile.name,
                 fileType: selectedFile.type
             };
             
-            // Step 3: Convert the payload to a JSON string and create a Blob for uploading.
             const dataToUpload = JSON.stringify(ipfsPayload);
             const fileBlob = new Blob([dataToUpload], { type: 'application/json' });
 
-            // Step 4: Upload the JSON blob to IPFS.
             const uploadResult = await uploadToIPFS({ file: fileBlob, userPublicKey: await signer.getAddress() });
             
             if (!uploadResult || !uploadResult.ipfsHash) {
@@ -71,7 +73,6 @@ const handleFileUpload = async () => {
             const ipfsCid = uploadResult.ipfsHash;
             console.log("Uploaded to IPFS with CID:", ipfsCid);
 
-            // Step 5: Add the record's metadata to the blockchain
             const dataTypeAsNumber = Number(dataType);
             let tx;
             if (userRole === 'Patient') {
@@ -82,8 +83,8 @@ const handleFileUpload = async () => {
             await tx.wait();
 
             alert('Record uploaded successfully!');
-            onUpload(); // Refreshes the dashboard
-            onClose();  // Closes the dialog
+            // onUpload && onUpload();
+            // onClose && onClose();
 
         } catch (error) {
             console.error('Error during upload process:', error);
@@ -105,23 +106,26 @@ const handleFileUpload = async () => {
                     error={!!error}
                     helperText={error}
                 />
-                <FormControl fullWidth margin="normal">
-                    <InputLabel id="data-type-label">Data Type</InputLabel>
-                    <Select
-                        labelId="data-type-label"
-                        value={dataType}
-                        onChange={handleDataTypeChange}
-                        label="Data Type"
-                    >
-                        {/* <-- FIX 2: Use the integer values that match the Solidity enum */}
-                        <MenuItem value={'1'}>PHR (Personal Health Record)</MenuItem>
-                        <MenuItem value={'3'}>Prescription</MenuItem>
-                        <MenuItem value={'2'}>Lab Result</MenuItem>
-                        <MenuItem value={'4'}>Imaging</MenuItem>
-                        {/* We remove EHR (0) as it's typically created by providers, not uploaded by patients. */}
-                    </Select>
-                    <FormHelperText>Select the type of health data</FormHelperText>
-                </FormControl>
+                
+                {/* MODIFICATION 3: Conditionally render the dropdown. Hide it if 'fixedDataType' is provided. */}
+                {!fixedDataType && (
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="data-type-label">Data Type</InputLabel>
+                        <Select
+                            labelId="data-type-label"
+                            value={dataType}
+                            onChange={handleDataTypeChange}
+                            label="Data Type"
+                        >
+                            <MenuItem value={'1'}>PHR (Personal Health Record)</MenuItem>
+                            <MenuItem value={'3'}>Prescription</MenuItem>
+                            <MenuItem value={'2'}>Lab Result</MenuItem>
+                            <MenuItem value={'4'}>Imaging</MenuItem>
+                        </Select>
+                        <FormHelperText>Select the type of health data</FormHelperText>
+                    </FormControl>
+                )}
+
                 {userRole === "Provider" && (
                     <TextField
                         label="Patient Address"
