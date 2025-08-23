@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-abstract contract EHRStorage {
+contract EHRStorage {
     // User roles
     enum Role {
         NONE,
@@ -113,7 +113,7 @@ abstract contract EHRStorage {
     mapping(address => string[]) public ownerToHealthRecords;
     mapping(address => KeyPair) public userKeys;
     mapping(address => mapping(address => bool)) public emergencyAccesses;
-    mapping(address => Appointment[]) public patientAppointments; // New state for appointments
+    mapping(address => Appointment[]) public patientAppointments;
 
     // System variables
     address public systemOwner;
@@ -121,6 +121,10 @@ abstract contract EHRStorage {
     uint256 public totalRecords;
     uint256 public totalRequests;
     bytes32[] public permissionRequestIds;
+
+    // Proxy pattern variables
+    address public implementation;
+    address public proxyAdmin;
 
     // Events
     event UserRegistered(address indexed userAddress, Role role);
@@ -146,5 +150,8 @@ abstract contract EHRStorage {
         string hospitalName,
         string roomType,
         uint256 bookingDate
-    ); // New event for bookings
+    );
+    
+    // Implementation upgraded event
+    event ImplementationUpgraded(address indexed oldImplementation, address indexed newImplementation);
 }
