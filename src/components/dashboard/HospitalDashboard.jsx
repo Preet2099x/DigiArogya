@@ -185,9 +185,11 @@ const HospitalDashboard = () => {
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
       {/* Header and Tabs */}
       <Box sx={{ p: 3, background: 'linear-gradient(120deg, #00796b 0%, #004d40 100%)', color: 'white' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <LocalHospital sx={{ fontSize: 40 }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>Hospital Dashboard</Typography>
+        <Box sx={{ display: 'flex', alignItems:'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LocalHospital sx={{ fontSize: 40 }} />
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>Hospital Dashboard</Typography>
+          </Box>
           <LogoutButton sx={{ ml: 'auto' }} />
         </Box>
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)', '&.Mui-selected': { color: 'white' }}, '& .MuiTabs-indicator': { backgroundColor: 'white' }}}>
